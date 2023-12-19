@@ -8,14 +8,66 @@ import pickle
 from pynput import keyboard,mouse
 
 class Server:
-    def __init__(self,host,port) -> None:
+    def __init__(self,host,port,password="") -> None:
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server_socket.bind((host, port))
-        self.server_socket.listen(5)
-        print("Waiting for a connection...")
-        self.client_socket, self.client_address = self.server_socket.accept()
-        print("Accepted connection from {}:{}".format(*self.client_address))
-        self.live = True
+        self.host=host
+        self.port=port
+        self.client_socket, self.client_address = None,None
+        self.connected = False
+        self.live = False
+        self.have_pass=True
+        self.accept_pass=False
+        self.password = '123456'
+
+    def connect(self):
+        while True:
+            if not self.connected:
+                self.server_socket.bind((self.host, self.port))
+                self.server_socket.listen(5)
+                print('Wait connect!')
+                self.client_socket, self.client_address = self.server_socket.accept()
+                print('Connected!')
+                self.client_socket.sendall(bytes([self.have_pass]))
+                self.connected=True
+                if not self.have_pass:
+                    self.live=True
+                    self.accept_pass=True
+        
+    def _send(self,mes):
+        message = pickle.dumps(mes)
+        packet = struct.pack('Q',len(message))+message
+        self.client_socket.sendall(packet)
+    
+    def get_request(self):
+        header = struct.calcsize('Q')
+        data = b''
+        while True:
+            if self.connected:
+                while len(data)<header:
+                    data += self.client_socket.recv(4*1024)
+                image_size = struct.unpack('Q',data[:header])[0]
+                data = data[header:]
+                while len(data) < image_size:
+                    data += self.client_socket.recv(4*1024)
+                request = data[:image_size]
+                data = data[image_size:]
+                self.handle(pickle.loads(request))
+    
+        
+    def handle(self,request):
+        print(request)
+        if request['type']=='pass':
+            self.handle_pass(request['password'])
+        # if request['devide']==2:
+        #     self.handle_pass(request['password'])
+        # elif request['device']==0:
+        #     self.handle_keyboard(request['type'],request['key'])
+        # elif request['device']==1:
+        #     self.handle_mouse(request['type'],request['key'])
+        # elif request['device']==3:
+        #     self.disconnect()
+        
+    
     def capture_screen(self):
         # Chụp ảnh màn hình
         screen = ImageGrab.grab()
@@ -24,11 +76,15 @@ class Server:
         return img_byte_arr.getvalue()
 
     def stream_screen(self):
-        while self.live:
-            image = self.capture_screen()
-            message = struct.pack('Q',len(image))+image
-            self.client_socket.send(message)
-            # sleep(1/120)
+        while True:
+            if self.connected and self.live:
+                image = self.capture_screen()
+                mes={
+                    'type':'screen',
+                    'image':image
+                }
+                self._send(mes)
+                sleep(1/30)
     
     def handle_keyboard(self,type,key):
         controller = keyboard.Controller()
@@ -42,41 +98,47 @@ class Server:
     def handle_mouse(self,type,key):
         controller = mouse.Controller()
         if type==0:
-            controller.move(dx=key[0],dy=key[1])
+            controller.position = (key[0],key[1])
         elif type==1:
             controller.press(key)
         elif type==2:
             controller.release(key)
         else:
             controller.scroll(dx=key[0],dy=key[1])
+            
+    def checkpass(self,password):
+        if not self.have_pass:
+            return True
+        if self.password==password:
+            return True
+        return False
     
-    def handle(self,request):
-        print(request)
-        # if request['device']==0:
-        #     self.handle_keyboard(request['type'],request['key'])
-        # elif request['device']==1:
-        #     self.handle_mouse(request['type'],request['key'])
+    def handle_pass(self,password):
+        if self.checkpass(password):
+            self.accept_pass=True
+            self.live=True
+            mes={
+                'type':'pass',
+                'status':True
+            }
+            self._send(mes)
+        else:
+            mes={
+                'type':'pass',
+                'status':False
+            }
+            self._send(mes)
+                
+    def disconnect(self):
+        self.client_socket.close()
+        self.connected=False
+        self.live=False
     
-    def get_request(self):
-        header = struct.calcsize('Q')
-        data = b''
-        while True:
-            while len(data)<header:
-                data += self.client_socket.recv(4*1024)
-            image_size = struct.unpack('Q',data[:header])[0]
-            data = data[header:]
-            while len(data) < image_size:
-                data += self.client_socket.recv(4*1024)
-            request = data[:image_size]
-            data = data[image_size:]
-            self.handle(pickle.loads(request))
-           
-        
-        
+                 
     def run(self):
+        Thread(target=self.connect).start()
         Thread(target=self.stream_screen).start()
         Thread(target=self.get_request).start()
-        
         sleep(20)
         return
     
