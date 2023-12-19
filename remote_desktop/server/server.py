@@ -55,7 +55,7 @@ class Server:
     
         
     def handle(self,request):
-        print(request)
+        # print(request)
         if request['type']=='pass':
             self.handle_pass(request['password'])
         # if request['devide']==2:
@@ -84,7 +84,7 @@ class Server:
                     'image':image
                 }
                 self._send(mes)
-                sleep(1/30)
+                sleep(1/60)
     
     def handle_keyboard(self,type,key):
         controller = keyboard.Controller()

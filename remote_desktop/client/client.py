@@ -8,6 +8,9 @@ import numpy as np
 from pynput import keyboard
 from pynput import mouse
 import pickle
+import cv2
+import os
+import datetime
 
 class Client:
     def __init__(self,host,port) -> None:
@@ -17,6 +20,7 @@ class Client:
         self.connected = True
         self.accepted = not self.have_pass
         self.capture = None
+        self.recording = False
 
     def _send(self,mes):        
         message = pickle.dumps(mes)
@@ -42,8 +46,8 @@ class Client:
         print(request['type'])
         if request['type']=='pass':
             self.handle_pass(request)
-        # if request['type']=='screen':
-        #     self.stream_screen(request)
+        if request['type']=='screen':
+            self.stream_screen(request)
         # elif 1:
         #     pass
 
@@ -59,8 +63,8 @@ class Client:
             self._send(mes)
         
     
-    def update_capture(self, data_image):
-        image = io.BytesIO(data_image)
+    def update_capture(self, dimage):
+        image = io.BytesIO(dimage)
         self.capture = Image.open(image)
         
     def stream_screen(self,request):
@@ -122,6 +126,35 @@ class Client:
                 pass
             listener.join()
             
+    def screen_record(self,fps=30):
+        self.recording = True
+        frames = []
+        while self.recording:
+            if self.capture is not None:
+                frame=np.array(self.capture)
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                frames.append(np.array(frame))
+
+        print(len(frames))
+        height, width, layers = frames[0].shape
+        current_time = datetime.datetime.now()
+        video_name = current_time.strftime("%Y-%m-%d_%H-%M-%S.mp4")
+        video = cv2.VideoWriter(video_name, cv2.VideoWriter_fourcc(*'mp4v'), fps, (width, height))
+
+        for frame in frames:
+            video.write(frame)
+
+        cv2.destroyAllWindows()
+        video.release()
+
+        
+        
+    def start_record(self):
+        Thread(target=self.screen_record).start()
+        
+    def stop_record(self):
+        self.recording = False
+    
     def run(self):
         Thread(target=self.get_request).start()
         Thread(target=self.mouse_listener).start()
@@ -133,3 +166,6 @@ class Client:
 client = Client('127.0.0.1', 8888)
 client.run()
 client.send_pass('123456')
+client.start_record()
+sleep(10)
+client.stop_record()
