@@ -12,6 +12,8 @@ class Server:
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.host=host
         self.port=port
+        self.server_socket.bind((self.host, self.port))
+        self.server_socket.listen(5)
         self.client_socket, self.client_address = None,None
         self.connected = False
         self.live = False
@@ -22,11 +24,11 @@ class Server:
     def connect(self):
         while True:
             if not self.connected:
-                self.server_socket.bind((self.host, self.port))
-                self.server_socket.listen(5)
+                
                 print('Wait connect!')
                 self.client_socket, self.client_address = self.server_socket.accept()
                 print('Connected!')
+                sleep(1)
                 self.client_socket.sendall(bytes([self.have_pass]))
                 self.connected=True
                 if not self.have_pass:
@@ -34,6 +36,8 @@ class Server:
                     self.accept_pass=True
         
     def _send(self,mes):
+        if not self.connected:
+            return
         message = pickle.dumps(mes)
         packet = struct.pack('Q',len(message))+message
         self.client_socket.sendall(packet)
@@ -55,9 +59,11 @@ class Server:
     
         
     def handle(self,request):
-        # print(request)
+        print(request)
         if request['type']=='pass':
             self.handle_pass(request['password'])
+        elif request['type']=='disconnect':
+            self.disconnect()
         # if request['devide']==2:
         #     self.handle_pass(request['password'])
         # elif request['device']==0:
@@ -130,17 +136,22 @@ class Server:
             self._send(mes)
                 
     def disconnect(self):
-        self.client_socket.close()
+        mes={
+            'type':'disconnect'
+        }
+        self._send(mes)
         self.connected=False
         self.live=False
+        self.accept_pass=False
+        sleep(5)
+        self.client_socket.close()
+        # self.server_socket.close()
     
                  
     def run(self):
         Thread(target=self.connect).start()
         Thread(target=self.stream_screen).start()
         Thread(target=self.get_request).start()
-        sleep(20)
-        return
     
 server = Server('127.0.0.1', 8888)
 server.run()
