@@ -121,9 +121,10 @@ class Client:
             self._send(mes)
         
     
-    def update_capture(self, dimage):
-        image = io.BytesIO(dimage)
-        self.capture = Image.open(image)
+    def update_capture(self, image):
+        # image = io.BytesIO(dimage)
+        # self.capture = Image.open(image)
+        self.capture = image
         
     def stream_screen(self,request):
         self.update_capture(request['image'])
@@ -289,11 +290,31 @@ class Client:
     
     def stop_sync(self):
         self.file_async = False
+        
+    def show_fullscreen_video(self):
+        # Tạo cửa sổ với thuộc tính toàn màn hình
+        cv2.namedWindow("Server", cv2.WND_PROP_FULLSCREEN)
+        cv2.setWindowProperty("Server", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+        while True:
+            frame=np.array(self.capture)
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+            cv2.imshow("Video", frame)
+
+            # Thoát khi nhấn phím 'q' hoặc kết thúc video
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+
+        # Khi xong, giải phóng và đóng tất cả
+        cv2.destroyAllWindows()
+
     
     def run(self):
         Thread(target=self.get_request).start()
         Thread(target=self.mouse_listener).start()
         Thread(target=self.keyboard_listener).start()
+        
+        
                             
 
             
