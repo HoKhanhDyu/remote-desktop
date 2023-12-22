@@ -16,6 +16,7 @@ class Client:
     def __init__(self,host,port) -> None:
         self.server_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
         self.server_socket.connect((host,port))
+        sleep(1)
         self.have_pass = bool(self.server_socket.recv(1)[0])
         self.connected = True
         self.accepted = not self.have_pass
@@ -23,6 +24,8 @@ class Client:
         self.recording = False
 
     def _send(self,mes):        
+        if not self.connected:
+            return
         message = pickle.dumps(mes)
         packet = struct.pack('Q',len(message))+message
         self.server_socket.sendall(packet)
@@ -30,7 +33,9 @@ class Client:
     def get_request(self):
         header = struct.calcsize('Q')
         data = b''
-        while True:
+        while not self.connected:
+            pass
+        while self.connected:
             while len(data)<header:
                 data += self.server_socket.recv(4*1024)
             image_size = struct.unpack('Q',data[:header])[0]
@@ -40,14 +45,15 @@ class Client:
             request = data[:image_size]
             data = data[image_size:]
             self.handle(pickle.loads(request))
-    
         
     def handle(self,request):
         print(request['type'])
         if request['type']=='pass':
             self.handle_pass(request)
-        if request['type']=='screen':
+        elif request['type']=='screen':
             self.stream_screen(request)
+        elif request['type']=='disconnect':
+            self.handle_disconnect()
         # elif 1:
         #     pass
 
@@ -115,16 +121,38 @@ class Client:
         self._send(mes)
     
     def keyboard_listener(self):
-        with keyboard.Listener(on_press=self.on_press, on_release=self.on_release) as listener:
-            while not self.accepted:
-                pass
-            listener.join()
-
+        # with keyboard.Listener(on_press=self.on_press, on_release=self.on_release) as listener:
+        #     while not self.accepted or not self.connected:
+        #         pass
+        #     listener.join()
+        #     while self.connected:  
+        #         pass 
+        #     listener.stop()
+        # print(2)
+        while not self.accepted or not self.connected:
+            pass
+        self.listener = keyboard.Listener(on_press=self.on_press,on_release=self.on_release)
+        self.listener.start()
+        while self.connected:
+            pass
+        self.listener.stop()
+        
     def mouse_listener(self):
-        with mouse.Listener(on_click=self.on_click,on_move=self.on_move, on_scroll=self.on_scroll) as listener:
-            while not self.accepted:
-                pass
-            listener.join()
+        # with mouse.Listener(on_click=self.on_click,on_move=self.on_move, on_scroll=self.on_scroll) as listener:
+        #     while not self.accepted or not self.connected:
+        #         pass
+        #     listener.join()
+        #     while self.connected:  
+        #         pass 
+        #     listener.stop()
+        # print(3)
+        while not self.accepted or not self.connected:
+            pass
+        self.listener = mouse.Listener(on_click=self.on_click,on_move=self.on_move, on_scroll=self.on_scroll)
+        self.listener.start()
+        while self.connected:
+            pass
+        self.listener.stop()
             
     def screen_record(self,fps=30):
         self.recording = True
@@ -135,7 +163,6 @@ class Client:
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 frames.append(np.array(frame))
 
-        print(len(frames))
         height, width, layers = frames[0].shape
         current_time = datetime.datetime.now()
         video_name = current_time.strftime("%Y-%m-%d_%H-%M-%S.mp4")
@@ -154,6 +181,21 @@ class Client:
         
     def stop_record(self):
         self.recording = False
+        
+    def save_screen(self):
+        if self.capture is not None:
+            current_time = datetime.datetime.now()
+            pic_name = current_time.strftime("%Y-%m-%d_%H-%M-%S.png")
+            self.capture.save(pic_name)
+    
+    def disconnect(self):     
+        mes={'type':'disconnect'}
+        self._send(mes)
+        self.connected = False
+        sleep(3)
+        
+    def handle_disconnect(self):
+        self.server_socket.close()
     
     def run(self):
         Thread(target=self.get_request).start()
@@ -163,9 +205,8 @@ class Client:
 
             
             
-client = Client('127.0.0.1', 8888)
+client = Client('192.168.100.10', 8888)
 client.run()
 client.send_pass('123456')
-client.start_record()
-sleep(10)
-client.stop_record()
+sleep(5)
+client.disconnect()
