@@ -205,7 +205,7 @@ class Client:
 
             
             
-client = Client('127.0.0.1', 8888)
+client = Client('192.168.100.10', 8888)
 client.run()
 client.send_pass('123456')
 sleep(5)
