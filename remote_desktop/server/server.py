@@ -67,6 +67,7 @@ class Server:
         self.fps = 60
         self.file_async = False
         self.sending_file = False
+        self.screen_size = (800,600)
 
     def connect(self):
         while True:
@@ -123,10 +124,13 @@ class Server:
     
     def capture_screen(self):
         # Chụp ảnh màn hình
+        # screen = ImageGrab.grab()
+        # img_byte_arr = io.BytesIO()
+        # screen.save(img_byte_arr, format='JPEG')
+        # return img_byte_arr.getvalue()
         screen = ImageGrab.grab()
-        img_byte_arr = io.BytesIO()
-        screen.save(img_byte_arr, format='JPEG')
-        return img_byte_arr.getvalue()
+        # screen = screen.resize(self.screen_size)
+        return screen
 
     def stream_screen(self):
         while True:
