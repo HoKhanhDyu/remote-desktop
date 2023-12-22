@@ -11,7 +11,52 @@ import pickle
 import cv2
 import os
 import datetime
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler
 
+sizefile = 100*1024
+
+class MyHandler(FileSystemEventHandler):
+    def on_modified(self, event):
+        if not event.is_directory and not client.sending_file:
+            file_path = event.src_path
+            with open(file_path, 'rb') as file:
+                data = file.read()
+                print(f"File đã thay đổi: {file_path}")
+                mes = {
+                    'type' : 'file',
+                    'event' : 'modified',
+                    'data' : data,
+                    'path' : file_path
+                }
+                client._send(mes)
+                # sleep(5)
+        
+    def on_created(self, event):
+        if not event.is_directory and not client.sending_file:
+            file_path = event.src_path
+            with open(file_path, 'rb') as file:
+                data = file.read()
+                print(f"{file_path} đã được tạo!")
+                mes = {
+                    'type' : 'file',
+                    'event' : 'created',
+                    'data' : data,
+                    'path' : file_path
+                }
+                client._send(mes)
+                # sleep(5)
+
+    def on_deleted(self, event):
+        if not event.is_directory and not client.sending_file:
+            print(f"{event.src_path} đã bị xóa!")
+            mes = { 
+                'type' : 'file',
+                'event' : 'deleted',
+                'path' : event.src_path
+            }   
+            client._send(mes)
+            # sleep(5)
 class Client:
     def __init__(self,host,port) -> None:
         self.server_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
@@ -22,6 +67,9 @@ class Client:
         self.accepted = not self.have_pass
         self.capture = None
         self.recording = False
+        self.file_async = False 
+        self.fps = 60
+        self.sending_file = False
 
     def _send(self,mes):        
         if not self.connected:
@@ -31,29 +79,33 @@ class Client:
         self.server_socket.sendall(packet)
         
     def get_request(self):
+        global sizefile
         header = struct.calcsize('Q')
         data = b''
         while not self.connected:
             pass
         while self.connected:
             while len(data)<header:
-                data += self.server_socket.recv(4*1024)
+                data += self.server_socket.recv(sizefile)
             image_size = struct.unpack('Q',data[:header])[0]
             data = data[header:]
             while len(data) < image_size:
-                data += self.server_socket.recv(4*1024)
+                data += self.server_socket.recv(sizefile)
             request = data[:image_size]
             data = data[image_size:]
             self.handle(pickle.loads(request))
         
     def handle(self,request):
-        print(request['type'])
+        if request['type']=='file':
+            print(request)
         if request['type']=='pass':
             self.handle_pass(request)
         elif request['type']=='screen':
             self.stream_screen(request)
         elif request['type']=='disconnect':
             self.handle_disconnect()
+        elif request['type']=='file':
+            self.handle_file(request)
         # elif 1:
         #     pass
 
@@ -134,7 +186,7 @@ class Client:
         self.listener = keyboard.Listener(on_press=self.on_press,on_release=self.on_release)
         self.listener.start()
         while self.connected:
-            pass
+            sleep(1)
         self.listener.stop()
         
     def mouse_listener(self):
@@ -151,10 +203,10 @@ class Client:
         self.listener = mouse.Listener(on_click=self.on_click,on_move=self.on_move, on_scroll=self.on_scroll)
         self.listener.start()
         while self.connected:
-            pass
+            sleep(1)
         self.listener.stop()
             
-    def screen_record(self,fps=30):
+    def screen_record(self,fps=60):
         self.recording = True
         frames = []
         while self.recording:
@@ -171,7 +223,6 @@ class Client:
         for frame in frames:
             video.write(frame)
 
-        cv2.destroyAllWindows()
         video.release()
 
         
@@ -196,6 +247,48 @@ class Client:
         
     def handle_disconnect(self):
         self.server_socket.close()
+
+    def async_file(self):
+        path = "./async"
+        if not os.path.exists(path):
+            os.makedirs(path)
+        for item in os.listdir(path):
+            item_path = os.path.join(path, item)
+            if os.path.isfile(item_path) or os.path.islink(item_path):
+                os.remove(item_path)
+        event_handler = MyHandler()
+        observer = Observer()
+        observer.schedule(event_handler, path, recursive=False)
+        observer.start()
+
+        try:
+            while self.file_async:
+                sleep(1)
+            observer.stop()
+        except KeyboardInterrupt:
+            observer.stop()
+    
+    def handle_file(self,mes):
+        # if not os.path.exists(mes['path']) and mes['path'] != '':
+        #     os.makedirs(mes['path'])
+        self.sending_file = True
+        if mes['event']=='modified':
+            with open(mes['path'],'wb') as file:
+                file.write(mes['data'])
+        elif mes['event']=='created':
+            with open(mes['path'],'wb') as file:
+                file.write(mes['data'])
+        elif mes['event']=='deleted':
+            os.remove(mes['path'])
+        sleep(5)
+        self.sending_file = False
+            
+    def start_sync(self):
+        self.file_async = True
+        Thread(target=self.async_file).start()
+    
+    def stop_sync(self):
+        self.file_async = False
     
     def run(self):
         Thread(target=self.get_request).start()
@@ -205,8 +298,9 @@ class Client:
 
             
             
-client = Client('192.168.100.10', 8888)
+client = Client('127.0.0.1', 8888)
 client.run()
 client.send_pass('123456')
-sleep(5)
-client.disconnect()
+client.start_sync()
+sleep(50)
+client.stop_sync()
