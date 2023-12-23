@@ -71,6 +71,7 @@ class Client:
         self.fps = 60
         self.controling = False
         self.sending_file = False
+        self.running = False
 
     def _send(self,mes):        
         if not self.connected:
@@ -83,9 +84,9 @@ class Client:
         global sizefile
         header = struct.calcsize('Q')
         data = b''
-        while not self.connected or not self.accepted:
+        while not self.connected:
             pass
-        while self.connected and self.accepted:
+        while self.connected:
             while len(data)<header:
                 data += self.server_socket.recv(sizefile)
             image_size = struct.unpack('Q',data[:header])[0]
@@ -97,6 +98,7 @@ class Client:
             self.handle(pickle.loads(request))
         
     def handle(self,request):
+        print(request)
         if request['type']=='file':
             print(request)
         if request['type']=='pass':
@@ -187,7 +189,7 @@ class Client:
             pass
         self.listener = keyboard.Listener(on_press=self.on_press,on_release=self.on_release)
         self.listener.start()
-        while self.connected and self.accepted and self.controling:
+        while self.connected and self.accepted and self.running:
             sleep(1)
         self.listener.stop()
         
@@ -204,7 +206,7 @@ class Client:
             pass
         self.listener = mouse.Listener(on_click=self.on_click,on_move=self.on_move, on_scroll=self.on_scroll)
         self.listener.start()
-        while self.connected and self.accepted and self.controling:
+        while self.connected and self.accepted and self.running:
             sleep(1)
         self.listener.stop()
             
@@ -311,12 +313,13 @@ class Client:
 
     
     def run(self):
+        self.running = True
         Thread(target=self.get_request).start()
         Thread(target=self.mouse_listener).start()
         Thread(target=self.keyboard_listener).start()
         
     def stop_run(self):
-        self.controling = False
+        self.running = False
         
         
                             
@@ -326,6 +329,5 @@ class Client:
 client = Client('127.0.0.1', 8888)
 client.run()
 client.send_pass('123456')
-client.start_sync()
-sleep(50)
-client.stop_sync()
+sleep(10)
+client.stop_run()
