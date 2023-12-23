@@ -3,7 +3,7 @@ import struct
 from PIL import Image
 import io
 from threading import Thread
-from time import sleep
+from time import sleep, time
 import numpy as np
 from pynput import keyboard
 from pynput import mouse
@@ -72,6 +72,7 @@ class Client:
         self.controling = False
         self.sending_file = False
         self.running = False
+        self.last_frame_time = None
 
     def _send(self,mes):        
         if not self.connected:
@@ -98,7 +99,7 @@ class Client:
             self.handle(pickle.loads(request))
         
     def handle(self,request):
-        print(request)
+        # print(request['type'])
         if request['type']=='file':
             print(request)
         if request['type']=='pass':
@@ -121,16 +122,24 @@ class Client:
                 'type':'pass',
                 'password': password
             }
-            self._send(mes)
+            self._send(mes) 
         
-    
-    def update_capture(self, image):
-        # image = io.BytesIO(dimage)
-        # self.capture = Image.open(image)
-        self.capture = image
+
+    def update_capture(self, dimage):
+        image = io.BytesIO(dimage)
+        self.capture = Image.open(image)
+        # self.capture = image
         
     def stream_screen(self,request):
         self.update_capture(request['image'])
+        current_time = time()
+
+        if self.last_frame_time is not None:
+            time_diff = current_time - self.last_frame_time
+            fps = 1 / time_diff if time_diff > 0 else 0
+            print(f"FPS: {fps}")
+
+        self.last_frame_time = current_time
     
     def on_press(self,key):
         mes = {
@@ -163,15 +172,15 @@ class Client:
             'key' : button
         }
         if pressed:
-            mes['type']='press'
+            mes['event']='press'
         else:
-            mes['type']='release'
+            mes['event']='release'
         self._send(mes)
 
     def on_scroll(self,x, y, dx, dy):
         mes = {
             'type' : 'mouse',
-            'event' : 'move',
+            'event' : 'scroll',
             'key' : (dx,dy)
         }
         self._send(mes)
@@ -301,9 +310,8 @@ class Client:
         while True:
             frame=np.array(self.capture)
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-
-            cv2.imshow("Video", frame)
-
+            # self.capture.show()
+            cv2.imshow("Server", frame)
             # Thoát khi nhấn phím 'q' hoặc kết thúc video
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
@@ -330,4 +338,4 @@ client = Client('127.0.0.1', 8888)
 client.run()
 client.send_pass('123456')
 sleep(10)
-client.stop_run()
+client.disconnect()
