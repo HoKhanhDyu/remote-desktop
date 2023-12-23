@@ -107,8 +107,7 @@ class Server:
     
         
     def handle(self,request):
-        if request['type']=='file':
-            print(request)
+        print(request)
         if request['type']=='pass':
             self.handle_pass(request['password'])
         elif request['type']=='disconnect':
@@ -247,6 +246,3 @@ class Server:
     
 server = Server('127.0.0.1', 8888)
 server.run()
-server.start_sync()
-sleep(50)
-server.stop_sync()
