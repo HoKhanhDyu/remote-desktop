@@ -69,6 +69,7 @@ class Client:
         self.recording = False
         self.file_async = False 
         self.fps = 60
+        self.controling = False
         self.sending_file = False
 
     def _send(self,mes):        
@@ -82,9 +83,9 @@ class Client:
         global sizefile
         header = struct.calcsize('Q')
         data = b''
-        while not self.connected:
+        while not self.connected or not self.accepted:
             pass
-        while self.connected:
+        while self.connected and self.accepted:
             while len(data)<header:
                 data += self.server_socket.recv(sizefile)
             image_size = struct.unpack('Q',data[:header])[0]
@@ -186,7 +187,7 @@ class Client:
             pass
         self.listener = keyboard.Listener(on_press=self.on_press,on_release=self.on_release)
         self.listener.start()
-        while self.connected:
+        while self.connected and self.accepted and self.controling:
             sleep(1)
         self.listener.stop()
         
@@ -203,7 +204,7 @@ class Client:
             pass
         self.listener = mouse.Listener(on_click=self.on_click,on_move=self.on_move, on_scroll=self.on_scroll)
         self.listener.start()
-        while self.connected:
+        while self.connected and self.accepted and self.controling:
             sleep(1)
         self.listener.stop()
             
@@ -313,6 +314,9 @@ class Client:
         Thread(target=self.get_request).start()
         Thread(target=self.mouse_listener).start()
         Thread(target=self.keyboard_listener).start()
+        
+    def stop_run(self):
+        self.controling = False
         
         
                             
