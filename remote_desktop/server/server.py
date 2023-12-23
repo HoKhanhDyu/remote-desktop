@@ -3,13 +3,14 @@ from PIL import ImageGrab
 import io
 import struct
 from threading import Thread
-from time import sleep
+from time import sleep, time
 import pickle
 import os
 from pynput import keyboard,mouse
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
+packet_size = 10000*1024
 class MyHandler(FileSystemEventHandler):
     def on_modified(self, event):
         if not event.is_directory and not server.sending_file:
@@ -68,6 +69,7 @@ class Server:
         self.file_async = False
         self.sending_file = False
         self.screen_size = (800,600)
+        self.last_frame_time = None
 
     def connect(self):
         while True:
@@ -82,13 +84,23 @@ class Server:
                 if not self.have_pass:
                     self.live=True
                     self.accept_pass=True
-        
+            sleep(5)
+    
+    
     def _send(self,mes):
         if not self.connected:
             return
-        message = pickle.dumps(mes)
+        message = pickle.dumps(mes) 
         packet = struct.pack('Q',len(message))+message
         self.client_socket.sendall(packet)
+        current_time = time()
+
+        if self.last_frame_time is not None:
+            time_diff = current_time - self.last_frame_time
+            fps = 1 / time_diff if time_diff > 0 else 0
+            print(f"FPS: {fps}")
+
+        self.last_frame_time = current_time
     
     def get_request(self):
         header = struct.calcsize('Q')
@@ -96,18 +108,20 @@ class Server:
         while True:
             if self.connected:
                 while len(data)<header:
-                    data += self.client_socket.recv(4*1024)
+                    data += self.client_socket.recv(packet_size)
                 image_size = struct.unpack('Q',data[:header])[0]
                 data = data[header:]
                 while len(data) < image_size:
-                    data += self.client_socket.recv(4*1024)
+                    data += self.client_socket.recv(packet_size)
                 request = data[:image_size]
                 data = data[image_size:]
                 self.handle(pickle.loads(request))
+            else:
+                sleep(1)
     
         
     def handle(self,request):
-        print(request)
+        # print(request)
         if request['type']=='pass':
             self.handle_pass(request['password'])
         elif request['type']=='disconnect':
@@ -115,21 +129,21 @@ class Server:
         elif request['type']=='file':
             self.handle_file(request)
         elif request['type']=='mouse':
-            self.handle_mouse(request['key'],request['type'])
+            self.handle_mouse(request['type'],request['key'])
         elif request['type']=='keyboard':    
-            self.handle_keyboard(request['key'],request['type'])
+            self.handle_keyboard(request['type'],request['key'])
 
         
     
     def capture_screen(self):
         # Chụp ảnh màn hình
-        # screen = ImageGrab.grab()
-        # img_byte_arr = io.BytesIO()
-        # screen.save(img_byte_arr, format='JPEG')
-        # return img_byte_arr.getvalue()
         screen = ImageGrab.grab()
-        # screen = screen.resize(self.screen_size)
-        return screen
+        img_byte_arr = io.BytesIO()
+        screen.save(img_byte_arr, format='JPEG')
+        return img_byte_arr.getvalue()
+        # screen = ImageGrab.grab()
+        # # screen = screen.resize(self.screen_size)
+        # return screen
 
     def stream_screen(self):
         while True:
@@ -140,7 +154,7 @@ class Server:
                     'image':image
                 }
                 self._send(mes)
-                sleep(1/self.fps)
+                
     
     def handle_keyboard(self,type,key):
         controller = keyboard.Controller()
@@ -154,7 +168,7 @@ class Server:
     def handle_mouse(self,type,key):
         controller = mouse.Controller()
         if type=='move':
-            controller.position = (key[0],key[1])
+            controller.position = key
         elif type=='press':
             controller.press(key)
         elif type=='release':

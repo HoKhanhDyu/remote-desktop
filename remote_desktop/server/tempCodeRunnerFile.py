@@ -1,2 +1,1 @@
-if request['type']=='file':
-            print(request)
+127.0.0.1
