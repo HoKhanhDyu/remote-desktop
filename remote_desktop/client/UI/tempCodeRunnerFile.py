@@ -1,0 +1,5 @@
+    # layout.addWidget(self.password_label)
+        # layout.addWidget(self.password_edit)
+        # layout.addWidget(self.image_label)
+        # layout.addWidget(self.image_edit)
+        # layout.addWidget(self.browse_button)
