@@ -56,14 +56,19 @@ class MyHandler(FileSystemEventHandler):
                 'path' : event.src_path
             }   
             client._send(mes)
-            # sleep(5)
+            # sleep(5)r
 class Client:
-    def __init__(self,host,port) -> None:
+    def __init__(self,host,port=8888) -> None:
         self.server_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-        self.server_socket.connect((host,port))
-        sleep(1)
-        self.have_pass = bool(self.server_socket.recv(1)[0])
-        self.connected = True
+        try:
+            self.server_socket.connect((host, port))
+            sleep(1)
+            self.have_pass = bool(self.server_socket.recv(1)[0])
+            self.connected = True
+        except socket.error:
+            self.server_socket = None
+            self.connected = False
+            return None
         self.accepted = not self.have_pass
         self.capture = None
         self.recording = False
@@ -73,10 +78,12 @@ class Client:
         self.sending_file = False
         self.running = False
         self.last_frame_time = None
+        self.x, self.y, self.height, self.width = 0, 0, 0, 0
 
     def _send(self,mes):        
         if not self.connected:
             return
+        print(mes['type'])
         message = pickle.dumps(mes)
         packet = struct.pack('Q',len(message))+message
         self.server_socket.sendall(packet)
@@ -97,7 +104,7 @@ class Client:
             request = data[:image_size]
             data = data[image_size:]
             self.handle(pickle.loads(request))
-        
+
     def handle(self,request):
         # print(request['type'])
         if request['type']=='file':
@@ -137,7 +144,7 @@ class Client:
         if self.last_frame_time is not None:
             time_diff = current_time - self.last_frame_time
             fps = 1 / time_diff if time_diff > 0 else 0
-            print(f"FPS: {fps}")
+            # print(f"FPS: {fps}")
 
         self.last_frame_time = current_time
     
@@ -159,6 +166,10 @@ class Client:
         self._send(mes)
         
     def on_move(self,x, y):
+        if x<self.x or x>self.x+self.width or y<self.y or y>self.y+self.height:
+            return
+        x=x-self.x/self.width*1920
+        y=y-self.y/self.height*1080
         mes = {
             'type' : 'mouse',
             'event' : 'move',
@@ -167,6 +178,10 @@ class Client:
         self._send(mes)
 
     def on_click(self,x, y, button, pressed):
+        if x<self.x or x>self.x+self.width or y<self.y or y>self.y+self.height:
+            return
+        x=x-self.x/self.width*1920
+        y=y-self.y/self.height*1080
         mes = {
             'type' : 'mouse',
             'key' : button
@@ -178,6 +193,10 @@ class Client:
         self._send(mes)
 
     def on_scroll(self,x, y, dx, dy):
+        if x<self.x or x>self.x+self.width or y<self.y or y>self.y+self.height:
+            return
+        x=x-self.x/self.width*1920
+        y=y-self.y/self.height*1080
         mes = {
             'type' : 'mouse',
             'event' : 'scroll',
@@ -195,12 +214,12 @@ class Client:
         #     listener.stop()
         # print(2)
         while not self.accepted or not self.connected:
-            pass
-        self.listener = keyboard.Listener(on_press=self.on_press,on_release=self.on_release)
-        self.listener.start()
+            sleep(1)
+        self.listener_key = keyboard.Listener(on_press=self.on_press,on_release=self.on_release)
+        self.listener_key.start()
         while self.connected and self.accepted and self.running:
             sleep(1)
-        self.listener.stop()
+        self.listener_key.stop()
         
     def mouse_listener(self):
         # with mouse.Listener(on_click=self.on_click,on_move=self.on_move, on_scroll=self.on_scroll) as listener:
@@ -212,12 +231,12 @@ class Client:
         #     listener.stop()
         # print(3)
         while not self.accepted or not self.connected:
-            pass
-        self.listener = mouse.Listener(on_click=self.on_click,on_move=self.on_move, on_scroll=self.on_scroll)
-        self.listener.start()
+            sleep(1)
+        self.listener_mouse = mouse.Listener(on_click=self.on_click,on_move=self.on_move, on_scroll=self.on_scroll)
+        self.listener_mouse.start()
         while self.connected and self.accepted and self.running:
             sleep(1)
-        self.listener.stop()
+        self.listener_mouse.stop()
             
     def screen_record(self,fps=60):
         self.recording = True
@@ -252,13 +271,14 @@ class Client:
             pic_name = current_time.strftime("%Y-%m-%d_%H-%M-%S.png")
             self.capture.save(pic_name)
     
-    def disconnect(self):     
+    def disconnect(self):    
+        print('disconnect') 
         mes={'type':'disconnect'}
         self._send(mes)
-        self.connected = False
-        sleep(3)
         
     def handle_disconnect(self):
+        self.connected = False
+        sleep(3)
         self.server_socket.close()
 
     def async_file(self):
@@ -320,22 +340,30 @@ class Client:
         cv2.destroyAllWindows()
 
     
-    def run(self):
+    def run_screen(self):
         self.running = True
         Thread(target=self.get_request).start()
-        Thread(target=self.mouse_listener).start()
+    
+    def run_listener(self):
         Thread(target=self.keyboard_listener).start()
+        Thread(target=self.mouse_listener).start()
         
     def stop_run(self):
         self.running = False
+        if self.listener_key is not None:
+            self.listener_key.stop()
+        if self.listener_mouse is not None:
+            self.listener_mouse.stop()
         
         
                             
 
             
             
-client = Client('127.0.0.1', 8888)
-client.run()
-client.send_pass('123456')
-sleep(10)
-client.disconnect()
+# client = Client('127.0.0.1', 8888)
+# client.run()
+# client.send_pass('zx')    
+# sleep(3)
+# client.send_pass('zxc')
+# sleep(5)
+# client.disconnect()
