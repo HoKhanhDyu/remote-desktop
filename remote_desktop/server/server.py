@@ -138,9 +138,9 @@ class Server:
         elif request['type'] == 'file':
             self.handle_file(request)
         elif request['type'] == 'mouse' and self.event_handle:
-            self.handle_mouse(request['type'], request['key'])
+            self.handle_mouse(request)
         elif request['type'] == 'keyboard' and self.event_handle:
-            self.handle_keyboard(request['type'], request['key'])
+            self.handle_keyboard(request)
 
     def capture_screen(self):
         screen = ImageGrab.grab()
@@ -162,24 +162,26 @@ class Server:
                     return
                 sleep(1)
 
-    def handle_keyboard(self, type, key):
+    def handle_keyboard(self, request):
         controller = keyboard.Controller()
-        if type == 'press':
-            print(key)
-            controller.press(key)
+        if request['event'] == 'press':
+            print(request['key'])
+            controller.press(request['key'])
         else:
-            controller.release(key)
+            controller.release(request['key'])
 
-    def handle_mouse(self, type, key):
+    def handle_mouse(self, request):
         controller = mouse.Controller()
-        if type == 'move':
-            controller.position = key
-        elif type == 'press':
-            controller.press(key)
-        elif type == 'release':
-            controller.release(key)
-        else:
-            controller.scroll(dx=key[0], dy=key[1])
+        if request['event'] == 'move':
+            controller.position = request['pos']
+        elif request['event'] == 'press':
+            controller.position = request['pos']
+            controller.press(request['key'])
+        elif request['event'] == 'release':
+            controller.position = request['pos']
+            controller.release(request['key'])
+        elif request['event'] == 'scroll':
+            controller.scroll(dx=request['key'][0], dy=request['key'][1])
 
     def checkpass(self, password):
         if not self.have_pass:

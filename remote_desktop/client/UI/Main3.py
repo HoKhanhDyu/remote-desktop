@@ -14,6 +14,9 @@ from UI.MainPage3 import Ui_MainWindow
 from UI.Status import UI_Status
 from client import Client
 from PyQt5.QtCore import QTimer
+from PyQt5.QtCore import Qt
+import time
+from PIL import Image
 
 
 class input_password(QDialog):
@@ -27,7 +30,7 @@ class input_password(QDialog):
         self.password_edit = QLineEdit(self)
 
         self.add_button = QPushButton("Add", self)
-        self.add_button.clicked.connect(self.check_password)
+        self.add_button.clicked.connect(self.ok)
 
     
         layout.addWidget(self.password_label)
@@ -37,6 +40,8 @@ class input_password(QDialog):
     def get_password(self):
         return self.password_edit.text()
 
+    def ok(self):
+        self.accept()
 class Add_Server_Dialog(QDialog):
     def __init__(self, parent=None):
         super(Add_Server_Dialog, self).__init__(parent)
@@ -80,13 +85,16 @@ class Add_Server_Dialog(QDialog):
         check_add=Client(ip)
         if check_add is None:
             QMessageBox.warning(self, 'Incorrect IP', 'Please enter the correct IP.')
-        elif check_add.have_pass:
+            return None
+        check_add.run_screen()
+        if check_add.have_pass:
             while True:
                 dialog=input_password(self)
                 result = dialog.exec_()
                 if result == QDialog.Accepted:
                     check_add.send_pass(dialog.get_password())
-                    if check_add.accepted():
+                    sleep(1)
+                    if check_add.accepted:
                         return check_add
                 else:
                     return None
@@ -109,14 +117,25 @@ class ImageWindow(QMainWindow):
         super().__init__()
         self.server = server
         self.setupUi(self)
-        self.x,self.y,self.w,self.h=0,0,0,0
+        global_x,global_y,global_w,global_h =self.get_actual_image_position_and_size()
+        self.x,self.y=global_x,global_y
+        self.server.x,self.server.y=self.x,self.y
+        self.w,self.h=global_w,global_h
+        self.server.width,self.server.height=self.w,self.h
+        self.last_frame_time = None
+        
     #setup ui
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(800, 600)
+        pic = io.BytesIO(self.server.capture)
+        pic = Image.open(pic)
+        MainWindow.resize(pic.size[0]//2, pic.size[1]//2)
         MainWindow.setWindowTitle("Image")
         self.image_label = QLabel(MainWindow)
-        self.image_label.setScaledContents(True)
+        # self.image_label.setScaledContents(True)
+        self.image_label.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
+        # self.image_label.setStyleSheet("background-color: black;")
+        self.image_label.setAlignment(Qt.AlignCenter)
 
         # Create a QVBoxLayout and add the QLabel to it
         layout = QVBoxLayout()
@@ -132,44 +151,75 @@ class ImageWindow(QMainWindow):
         # Initialize and start the QTimer
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.load_image)
-        self.timer.start(50)
+        self.timer.start(10)
         
         self.timer2 = QTimer(self)
         self.timer2.timeout.connect(self.update_x_y)
-        self.timer2.start(1000)
+        self.timer2.start(5000)
         
         
     def load_image(self):
         # print('load image')
-        buffer = io.BytesIO()
-        if self.server['server'].capture is None:
+        if self.server.capture is None:
             return
-        self.server['server'].capture.save(buffer, format="PNG")
 
         # Chuyển đổi sang QPixmap và hiển thị trong QLabel
         pixmap = QPixmap()
-        success = pixmap.loadFromData(buffer.getvalue(), "PNG") 
+        success = pixmap.loadFromData(self.server.capture, "JPEG") 
 
         # Kiểm tra xem việc tải dữ liệu có thành công không
         if success:
             # Chỉnh sửa kích thước ảnh nếu tải thành công
             # print('load image')
-            # pixmap = pixmap.scaledToWidth(1000)
-            self.image_label.setPixmap(pixmap)
+            # pixmap = pixmap.scaledToWidth(800)
+            scaledPixmap = pixmap.scaled(self.width()-20, self.height()-20, Qt.KeepAspectRatio)
+            self.image_label.setPixmap(scaledPixmap)
             # Bây giờ bạn có thể sử dụng pixmap để hiển thị trong QLabel hoặc widget khác
             # Ví dụ: self.image_label.setPixmap(pixmap)
         else:
             print("Failed to load image data.")
+        current_time = time.time()
+
+        if self.last_frame_time is not None:
+            time_diff = current_time - self.last_frame_time
+            fps = 1 / time_diff if time_diff > 0 else 0
+            print(f"FPS: {fps}")
+
+        self.last_frame_time = current_time            
         
         # self.image_label.update()
         
     def update_x_y(self):
-        if self.x != self.pos().x() or self.y != self.pos().y():
-            self.x,self.y=self.pos().x(),self.pos().y()
+        global_x,global_y,global_w,global_h =self.get_actual_image_position_and_size()
+        if self.x != global_x or self.y != global_y:
+            self.x,self.y=global_x,global_y
             self.server.x,self.server.y=self.x,self.y
-        if self.w != self.width() or self.h != self.height():
-            self.w,self.h=self.width(),self.height()
+        if self.w!=global_w or self.h!=global_h:
+            self.w,self.h=global_w,global_h
             self.server.width,self.server.height=self.w,self.h
+            
+    def get_actual_image_position_and_size(self):
+        label_global_pos = self.image_label.mapToGlobal(QtCore.QPoint(0, 0))
+        label_size = self.image_label.size()
+        pixmap = self.image_label.pixmap()
+
+        if pixmap and not pixmap.isNull():
+            # Kích thước của ảnh sau khi được điều chỉnh kích thước
+            image_size = pixmap.size().scaled(label_size, Qt.KeepAspectRatio)
+
+            # Tính padding
+            padding_x = (label_size.width() - image_size.width()) // 2
+            padding_y = (label_size.height() - image_size.height()) // 2
+
+            # Vị trí thực tế của ảnh bên trong image_label
+            actual_x = label_global_pos.x() + padding_x
+            actual_y = label_global_pos.y() + padding_y
+
+            # Trả về vị trí và kích thước thực tế của ảnh
+            return actual_x, actual_y, image_size.width(), image_size.height()
+        else:
+            # Nếu không có pixmap, trả về vị trí của image_label và kích thước 0
+            return label_global_pos.x(), label_global_pos.y(), 0, 0
         
         
 
@@ -185,12 +235,12 @@ class MainWindow(QMainWindow):
         self.server_list = []
 
         # Populate the scroll area with server information
-        self.timer = QTimer()
-        # Connect the timer's timeout signal to the update_image function
-        self.timer.timeout.connect(self.populate_server_list)
-        # Start the timer to call update_image every 100ms
-        self.timer.start(1000)
-        
+        # self.timer = QTimer()
+        # # Connect the timer's timeout signal to the update_image function
+        # self.timer.timeout.connect(self.populate_server_list)
+        # # Start the timer to call update_image every 100ms
+        # self.timer.start(1000)
+        self.populate_server_list()
 
         self.ui.ConnectButton.clicked.connect(self.show_add_server_dialog)
         #self.verticalLayout.addWidget(self.ui.ConnectButton)
@@ -220,16 +270,14 @@ class MainWindow(QMainWindow):
 
             # Add image to the row
             image_label = QLabel()
-            buffer = io.BytesIO()
             #check none
             while server['server'].capture is None:
                 print('none')
                 sleep(1)
-            server['server'].capture.save(buffer, format="PNG")
 
             # Chuyển đổi sang QPixmap và hiển thị trong QLabel
             pixmap = QPixmap()
-            success = pixmap.loadFromData(buffer.getvalue(), "PNG")
+            success = pixmap.loadFromData(server['server'].capture, "JPEG")
 
             # Kiểm tra xem việc tải dữ liệu có thành công không
             if success:
@@ -279,7 +327,7 @@ class MainWindow(QMainWindow):
             print(new_server)
             if new_server['server'] is None:
                 return
-            new_server['server'].run_screen()
+            # new_server['server'].run_screen()
             self.server_list.append(new_server)
 
             # Clear the existing table
@@ -302,8 +350,8 @@ class MainWindow(QMainWindow):
         
     def show_image_window(self, server):
         # self.image_window = QtWidgets.QMainWindow()
-        self.ui_image = ImageWindow(server)
-        server['server'].run_listen()
+        self.ui_image = ImageWindow(server['server'])
+        server['server'].run_listener()
         # ui_image.setupUi(self.image_window)
         # self.image_window.show()
         self.ui_image.show()
