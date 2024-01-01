@@ -79,11 +79,13 @@ class Client:
         self.running = False
         self.last_frame_time = None
         self.x, self.y, self.height, self.width = 0, 0, 0, 0
+        self.lasttime = time()
+        self.press = False
 
     def _send(self,mes):        
         if not self.connected:
             return
-        print(mes['type'])
+        print(mes)
         message = pickle.dumps(mes)
         packet = struct.pack('Q',len(message))+message
         self.server_socket.sendall(packet)
@@ -93,7 +95,7 @@ class Client:
         header = struct.calcsize('Q')
         data = b''
         while not self.connected:
-            pass
+            sleep(1)
         while self.connected:
             while len(data)<header:
                 data += self.server_socket.recv(sizefile)
@@ -106,7 +108,7 @@ class Client:
             self.handle(pickle.loads(request))
 
     def handle(self,request):
-        # print(request['type'])
+        # print(request)
         if request['type']=='file':
             print(request)
         if request['type']=='pass':
@@ -121,6 +123,7 @@ class Client:
         #     pass
 
     def handle_pass(self,request):
+        print(request['status'])
         self.accepted = request['status']
 
     def send_pass(self,password):
@@ -133,9 +136,9 @@ class Client:
         
 
     def update_capture(self, dimage):
-        image = io.BytesIO(dimage)
-        self.capture = Image.open(image)
-        # self.capture = image
+        # image = io.BytesIO(dimage)
+        # self.capture = Image.open(image)
+        self.capture = dimage
         
     def stream_screen(self,request):
         self.update_capture(request['image'])
@@ -168,39 +171,48 @@ class Client:
     def on_move(self,x, y):
         if x<self.x or x>self.x+self.width or y<self.y or y>self.y+self.height:
             return
-        x=x-self.x/self.width*1920
-        y=y-self.y/self.height*1080
-        mes = {
-            'type' : 'mouse',
-            'event' : 'move',
-            'key' : (x,y)
-        }
-        self._send(mes)
+        current_time = time()
+        if current_time - self.lasttime > 0.1 or self.press:
+            # Gửi cập nhật
+            self.lasttime = current_time
+            x=(x-self.x)/self.width
+            y=(y-self.y)/self.height
+            mes = {
+                'type' : 'mouse',
+                'event' : 'move',
+                'key' : (x,y),
+                'pos' : (x,y)
+            }
+            self._send(mes)
 
     def on_click(self,x, y, button, pressed):
         if x<self.x or x>self.x+self.width or y<self.y or y>self.y+self.height:
             return
-        x=x-self.x/self.width*1920
-        y=y-self.y/self.height*1080
+        x=(x-self.x)/self.width
+        y=(y-self.y)/self.height
         mes = {
             'type' : 'mouse',
-            'key' : button
+            'key' : button,
+            'pos' : (x,y)
         }
         if pressed:
             mes['event']='press'
+            self.press = True
         else:
             mes['event']='release'
+            self.press = False
         self._send(mes)
 
     def on_scroll(self,x, y, dx, dy):
         if x<self.x or x>self.x+self.width or y<self.y or y>self.y+self.height:
             return
-        x=x-self.x/self.width*1920
-        y=y-self.y/self.height*1080
+        x=(x-self.x)/self.width
+        y=(y-self.y)/self.height
         mes = {
             'type' : 'mouse',
             'event' : 'scroll',
-            'key' : (dx,dy)
+            'key' : (dx,dy),
+            'pos' : (x,y)
         }
         self._send(mes)
     
