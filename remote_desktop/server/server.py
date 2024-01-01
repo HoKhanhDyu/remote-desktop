@@ -10,6 +10,8 @@ from pynput import keyboard, mouse
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 import screeninfo
+from pynput import mouse
+import cursor
 
 
 packet_size = 10000 * 1024
@@ -77,6 +79,7 @@ class Server:
         self.wait_connect = False
         self.event_handle = True
         self.send_screen = True
+        self.turn_off_mouse = mouse.Listener(suppress=True)
 
     def connect(self):
         while True:
@@ -143,6 +146,8 @@ class Server:
             self.handle_mouse(request)
         elif request['type'] == 'keyboard' and self.event_handle:
             self.handle_keyboard(request)
+        elif request['type'] == 'off_mouse':
+            self.handle_off_mouse(request)
 
     def capture_screen(self):
         screen = ImageGrab.grab()
@@ -150,6 +155,13 @@ class Server:
         screen.save(img_byte_arr, format='JPEG')
         return img_byte_arr.getvalue()
 
+    def handle_off_mouse(self,request):
+        if request['event'] == 'off':
+            self.turn_off_mouse.start()
+            cursor.hide()
+        elif request['event'] == 'on':
+            self.turn_off_mouse.stop()
+            cursor.show()
     def stream_screen(self):
         while True:
             if self.connected and self.live and self.send_screen:

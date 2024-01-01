@@ -129,6 +129,20 @@ class Client:
         print(request['status'])
         self.accepted = request['status']
 
+    def on_mouse(self):
+        mes = {
+            'type' : 'mouse',
+            'event' : 'on'
+        }
+        self._send(mes)
+    
+    def off_mouse(self):
+        mes = {
+            'type' : 'mouse',
+            'event' : 'off'
+        }
+        self._send(mes)
+    
     def send_pass(self,password):
         if self.connected:
             mes = {

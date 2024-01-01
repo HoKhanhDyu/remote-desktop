@@ -250,7 +250,28 @@ class MainWindow(QMainWindow):
         
         self.timer = QTimer()
         self.timer.timeout.connect(self.populate_server_list)
-        self.timer.start(1000)
+        self.timer.start(5000)
+        self.ui.DisconnectButton.clicked.connect(self.disconnect_selected_server)
+        #self.verticalLayout.addWidget(self.ui.ConnectButton)
+    def disconnect_selected_server(self):
+        # Get the selected row
+        selected_row = self.ui.scrollArea.widget().layout().itemAt(0).widget().currentRow()
+
+        if selected_row >= 0:
+            # Remove the selected server from the list
+            self.server_list[selected_row]['server'].disconnect()
+            del self.server_list[selected_row]
+
+            # Clear the existing table
+            self.clear_table()
+
+            # Repopulate the table with the updated server list
+            self.populate_server_list()
+            # Show a success message
+            QMessageBox.information(self, 'Success', 'Server disconnected successfully.')
+        else:
+            # Show a warning message if no row is selected
+            QMessageBox.warning(self, 'No Server Selected', 'Please select a server to disconnect.')
 
     def populate_server_list(self): 
         # Create a new widget to hold the layout
