@@ -181,8 +181,11 @@ class UI_Status(object):
     def on_MouseButton_clicked(self):
         if self.mouse_icon_flag: # Tuy thuoc vao True/False se lua chon Icon de thay cho button
             new_icon = QtGui.QIcon(":/Image/mouse.png")
+            self.server.on_mouse()
         else:
             new_icon = QtGui.QIcon(":/Image/mouse_delete.png")
+            self.server.off_mouse()
+            
 
         #Set up button moi cho Button
         self.MouseButton.setIcon(new_icon)
