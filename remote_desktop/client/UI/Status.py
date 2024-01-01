@@ -8,6 +8,7 @@ class UI_Status(object):
         self.parent = parent  # Store the parent widget reference
         self.server = server
         self.screen = screen
+        self.recording = False
 
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
@@ -225,6 +226,18 @@ class UI_Status(object):
         self.RecorderButton.setStyleSheet("background-color: white")
 
     def on_RecorderButton_clicked(self):
+        if self.recording: # Tuy thuoc vao True/False se lua chon Icon de thay cho button
+            new_icon = QtGui.QIcon(":/Image/recorder.png")
+            self.server.start_record()
+        else:
+            new_icon = QtGui.QIcon(":/Image/recorder.png")
+            self.server.stop_record()
+            
+
+        #Set up button moi cho Button
+        self.MouseButton.setIcon(new_icon)
+        # Doi true -> fale hoac nguoc lai
+        self.recording = not self.recording
         print("Recorder clicked")
 
     #------------------------------------#
@@ -258,6 +271,7 @@ class UI_Status(object):
     #------------------------------------#
     def on_SD_Box_Changed(self, index):
         print(self.SD_Box.itemText(index))
+        self.server.change_size_screen(self.SD_Box.itemText(index))
     
     #------------------------------------#
         
