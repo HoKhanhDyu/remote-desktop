@@ -81,6 +81,9 @@ class Client:
         self.x, self.y, self.height, self.width = 0, 0, 0, 0
         self.lasttime = time()
         self.press = False
+        self.listener_key = None
+        self.listener_mouse = None
+        self.path = 'D:/async'
 
     def _send(self,mes):        
         if not self.connected:
@@ -229,9 +232,6 @@ class Client:
             sleep(1)
         self.listener_key = keyboard.Listener(on_press=self.on_press,on_release=self.on_release)
         self.listener_key.start()
-        while self.connected and self.accepted and self.running:
-            sleep(1)
-        self.listener_key.stop()
         
     def mouse_listener(self):
         # with mouse.Listener(on_click=self.on_click,on_move=self.on_move, on_scroll=self.on_scroll) as listener:
@@ -246,9 +246,6 @@ class Client:
             sleep(1)
         self.listener_mouse = mouse.Listener(on_click=self.on_click,on_move=self.on_move, on_scroll=self.on_scroll)
         self.listener_mouse.start()
-        while self.connected and self.accepted and self.running:
-            sleep(1)
-        self.listener_mouse.stop()
             
     def screen_record(self,fps=60):
         self.recording = True
@@ -281,7 +278,9 @@ class Client:
         if self.capture is not None:
             current_time = datetime.datetime.now()
             pic_name = current_time.strftime("%Y-%m-%d_%H-%M-%S.png")
-            self.capture.save(pic_name)
+            file = io.BytesIO(self.capture)
+            image = Image.open(file)
+            image.save(pic_name)
     
     def disconnect(self):    
         print('disconnect') 
@@ -294,16 +293,15 @@ class Client:
         self.server_socket.close()
 
     def async_file(self):
-        path = "./async"
-        if not os.path.exists(path):
-            os.makedirs(path)
-        for item in os.listdir(path):
-            item_path = os.path.join(path, item)
+        if not os.path.exists(self.path):
+            os.makedirs(self.path)
+        for item in os.listdir(self.path):
+            item_path = os.path.join(self.path, item)
             if os.path.isfile(item_path) or os.path.islink(item_path):
                 os.remove(item_path)
         event_handler = MyHandler()
         observer = Observer()
-        observer.schedule(event_handler, path, recursive=False)
+        observer.schedule(event_handler, self.path, recursive=False)
         observer.start()
 
         try:
@@ -361,7 +359,7 @@ class Client:
         Thread(target=self.mouse_listener).start()
         
     def stop_run(self):
-        self.running = False
+        # self.running = False
         if self.listener_key is not None:
             self.listener_key.stop()
         if self.listener_mouse is not None:

@@ -1,5 +1,8 @@
-    # layout.addWidget(self.password_label)
-        # layout.addWidget(self.password_edit)
-        # layout.addWidget(self.image_label)
-        # layout.addWidget(self.image_edit)
-        # layout.addWidget(self.browse_button)
+_":
+    import sys
+    app = QtWidgets.QApplication(sys.argv)
+    MainWindow = QtWidgets.QMainWindow()
+    ui = UI_Status()
+    ui.setupUi(MainWindow)
+    MainWindow.show()
+    sys.exit(app.exec_())

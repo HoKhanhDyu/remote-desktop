@@ -221,6 +221,9 @@ class ImageWindow(QMainWindow):
             # Nếu không có pixmap, trả về vị trí của image_label và kích thước 0
             return label_global_pos.x(), label_global_pos.y(), 0, 0
         
+    def close_window(self):
+        self.close()
+        self.deleteLater()
         
 
 
@@ -244,9 +247,13 @@ class MainWindow(QMainWindow):
 
         self.ui.ConnectButton.clicked.connect(self.show_add_server_dialog)
         #self.verticalLayout.addWidget(self.ui.ConnectButton)
+        
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.populate_server_list)
+        self.timer.start(1000)
 
     def populate_server_list(self): 
-        # Create a new widget to hold the layouthj
+        # Create a new widget to hold the layout
         widget = QWidget(self)
         self.ui.scrollArea.setWidget(widget)
         # Create a new QVBoxLayout for the widget
@@ -256,6 +263,9 @@ class MainWindow(QMainWindow):
         table_widget = QTableWidget()
         table_widget.setColumnCount(2)  # Number of columns (IP, Image)
 
+        ip_column_width = 200
+        table_widget.setColumnWidth(0, ip_column_width)
+        
         # Set headers
         headers = ["IP", "Image"]
         table_widget.setHorizontalHeaderLabels(headers)
@@ -266,10 +276,13 @@ class MainWindow(QMainWindow):
             table_widget.insertRow(row_position)
 
             # Populate each cell in the row
-            table_widget.setItem(row_position, 0, QTableWidgetItem(server["ip"]))
-
+            
+            ip = QTableWidgetItem(server["ip"])
+            ip.setTextAlignment(Qt.AlignCenter)
+            table_widget.setItem(row_position, 0, ip)
             # Add image to the row
             image_label = QLabel()
+            image_label.setAlignment(Qt.AlignCenter)
             #check none
             while server['server'].capture is None:
                 print('none')
@@ -279,16 +292,40 @@ class MainWindow(QMainWindow):
             pixmap = QPixmap()
             success = pixmap.loadFromData(server['server'].capture, "JPEG")
 
-            # Kiểm tra xem việc tải dữ liệu có thành công không
-            if success:
-                # Chỉnh sửa kích thước ảnh nếu tải thành công
-                pixmap = pixmap.scaledToWidth(100)
+            if not success:
+                print("Failed to load image data.")
+                return
+            
+            original_width = pixmap.width()
+            original_height = pixmap.height()
+            scaled_width = 500  # Adjust the width as needed
+            scaled_height = int((scaled_width / original_width) * original_height)
 
-                # Bây giờ bạn có thể sử dụng pixmap để hiển thị trong QLabel hoặc widget khác
-                # Ví dụ: self.image_label.setPixmap(pixmap)
-            else:
-                print("Failed to load image data.")# Adjust the width as needed
+            # Set a maximum height for the images
+            ip_column_width = 200
+            table_widget.setColumnWidth(0, ip_column_width)
+            max_height = 200  # Adjust the height as needed
+            if scaled_height > max_height:
+                scaled_height = max_height
+                scaled_width = int((scaled_height / original_height) * original_width)
+
+            pixmap = pixmap.scaled(scaled_width, scaled_height, Qt.KeepAspectRatio)
             image_label.setPixmap(pixmap)
+
+            # Set a fixed width for the IP column
+            ip_column_width = scaled_width // 2
+            ip_column_width = 200
+            table_widget.setColumnWidth(0, ip_column_width)
+
+            # Set a fixed width for the image column
+            table_widget.setColumnWidth(1, scaled_width)
+
+            # Set size policy for the image label
+            image_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+            # Set a fixed height for the row
+            table_widget.setRowHeight(row_position, scaled_height)
+
             table_widget.setCellWidget(row_position, 1, image_label)
 
         table_widget.cellClicked.connect(self.cell_clicked)
@@ -302,7 +339,7 @@ class MainWindow(QMainWindow):
 
         # Set the last section of the horizontal header to stretch
         header = table_widget.horizontalHeader()
-        header.setSectionResizeMode(QHeaderView.Stretch)
+        header.setSectionResizeMode(1, QHeaderView.Stretch)
 
         # Add the table widget to the layout
         layout.addWidget(table_widget)
@@ -345,17 +382,23 @@ class MainWindow(QMainWindow):
     def cell_clicked(self, row, column):
         print(f"Đây là ô ({row}, {column})")
         server_screen = self.server_list[row]
-        self.show_image_window(server_screen)
-        self.show_status_window()
+        self.show_window(server_screen)
         
-    def show_image_window(self, server):
+    def show_window(self, server):
         # self.image_window = QtWidgets.QMainWindow()
         self.ui_image = ImageWindow(server['server'])
         server['server'].run_listener()
+        server['server'].start_sync()
         # ui_image.setupUi(self.image_window)
         # self.image_window.show()
         self.ui_image.show()
-
+        if not self.status_window or not self.status_window.isVisible():  
+            self.status_window = QtWidgets.QMainWindow()
+            ui_status = UI_Status(self.status_window,server['server'],self.ui_image)
+            ui_status.setupUi(self.status_window)
+            self.status_window.show()
+            # Connect the destroyed signal to set status_window to None
+            self.status_window.destroyed.connect(lambda: setattr(self, 'status_window', None))
     
     # def show_status_window(self):
     #     if not self.status_window:  # Check if the status window is not already open
@@ -364,13 +407,13 @@ class MainWindow(QMainWindow):
     #         ui_status.setupUi(self.status_window)
     #         self.status_window.show()
    
-    def show_status_window(self):
-        if not self.status_window or not self.status_window.isVisible():  
-            self.status_window = QtWidgets.QMainWindow()
-            ui_status = UI_Status(self.status_window)
-            ui_status.setupUi(self.status_window)
-            self.status_window.show()
-            # Connect the destroyed signal to set status_window to None
-            self.status_window.destroyed.connect(lambda: setattr(self, 'status_window', None))
+    # def show_status_window(self):
+    #     if not self.status_window or not self.status_window.isVisible():  
+    #         self.status_window = QtWidgets.QMainWindow()
+    #         ui_status = UI_Status(self.status_window)
+    #         ui_status.setupUi(self.status_window)
+    #         self.status_window.show()
+    #         # Connect the destroyed signal to set status_window to None
+    #         self.status_window.destroyed.connect(lambda: setattr(self, 'status_window', None))
 
 

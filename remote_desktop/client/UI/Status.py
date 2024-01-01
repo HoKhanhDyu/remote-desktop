@@ -1,18 +1,22 @@
+import os
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 
 class UI_Status(object):
     
-    def __init__(self, parent=None):  # Add 'parent' as an argument
+    def __init__(self, parent=None, server = None, screen = None):  # Add 'parent' as an argument
         self.parent = parent  # Store the parent widget reference
+        self.server = server
+        self.screen = screen
 
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(474, 108)
+        MainWindow.resize(602, 105)
+        self.mainWindow = MainWindow
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.frame = QtWidgets.QFrame(self.centralwidget)
-        self.frame.setGeometry(QtCore.QRect(0, 0, 471, 61))
+        self.frame.setGeometry(QtCore.QRect(0, 0, 591, 61))
         self.frame.setStyleSheet("background-color: rgb(158, 226, 255);\n"
 "border-radius: 10px")
         self.frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
@@ -100,13 +104,31 @@ class UI_Status(object):
 
         # Độ phân giải
         self.SD_Box = QtWidgets.QComboBox(self.frame)
-        self.SD_Box.setGeometry(QtCore.QRect(260, 10, 125, 41))
+        self.SD_Box.setGeometry(QtCore.QRect(310, 10, 125, 41))
         self.SD_Box.setStyleSheet("background-color: rgb(255, 255, 255);")
         self.SD_Box.setObjectName("SD_Box")
         self.SD_Box.addItem("")
         self.SD_Box.addItem("")
         self.SD_Box.addItem("")
         self.SD_Box.addItem("")
+
+        #Nút mở folder
+        self.FileButton = QtWidgets.QPushButton(self.frame)
+        self.FileButton.setGeometry(QtCore.QRect(260, 10, 41, 41))
+        self.FileButton.setStyleSheet("background-color: rgb(255, 255, 255);")
+        self.FileButton.setText("")
+        icon5 = QtGui.QIcon()
+        icon5.addPixmap(QtGui.QPixmap(":/Image/file.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.FileButton.setIcon(icon5)
+        self.FileButton.setObjectName("FileButton")
+        # Set up khi nut duoc click
+        self.FileButton.clicked.connect(self.on_FileButton_clicked)
+        # Bien (TRUE/False) nay dem danh dau button da duoc nhan chua de thay doi icon phu hop
+        self.file_icon_flag = False
+        # Set up de nut thay doi mau khi con chuot cham vao
+        self.FileButton.enterEvent = self.on_File_Button_enter
+        self.FileButton.leaveEvent = self.on_File_Button_leave
+
         MainWindow.setCentralWidget(self.centralwidget)
         # Set up khi nut duoc click
         self.SD_Box.currentIndexChanged.connect(self.on_SD_Box_Changed)
@@ -121,7 +143,7 @@ class UI_Status(object):
 
         #stopwatch
         self.stopwatch_label = QtWidgets.QLabel(self.frame)
-        self.stopwatch_label.setGeometry(QtCore.QRect(395, 10, 100, 41))
+        self.stopwatch_label.setGeometry(QtCore.QRect(480, 10, 100, 41))
         font = QtGui.QFont()
         font.setPointSize(12)
         self.stopwatch_label.setFont(font)
@@ -211,6 +233,7 @@ class UI_Status(object):
         self.ScreenShotButton.setStyleSheet("background-color: white")
     
     def on_ScreenShotButton_clicked(self):
+        self.server.save_screen()
         print("Sreen Shot Clicked")
 
     #------------------------------------#
@@ -222,14 +245,28 @@ class UI_Status(object):
         self.powerButton.setStyleSheet("background-color: white")
 
     def on_PowerButton_clicked(self):
+        self.server.stop_run()
+        self.server.stop_sync()
+        self.screen.close_window()
+        self.mainWindow.close()
+        self.mainWindow.destroy()
         print("Power Button Clicked")
     
     #------------------------------------#
     def on_SD_Box_Changed(self, index):
         print(self.SD_Box.itemText(index))
+    
+    #------------------------------------#
+        
+    def on_File_Button_enter(self, event):
+        self.FileButton.setStyleSheet("background-color: lightblue;")
+    
+    def on_File_Button_leave(self, event):
+        self.FileButton.setStyleSheet("background-color: white")
 
-import UI.Socket_rc
-
+    def on_FileButton_clicked(self):
+        os.startfile(self.server.path)
+        print("File Button Clicked")
 
 # if __name__ == "__main__":
 #     import sys

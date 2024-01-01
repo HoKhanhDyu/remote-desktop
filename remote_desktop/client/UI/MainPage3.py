@@ -4,11 +4,11 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(475, 396)
+        MainWindow.setFixedSize(836, 548)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.frame = QtWidgets.QFrame(self.centralwidget)
-        self.frame.setGeometry(QtCore.QRect(0, 0, 461, 61))
+        self.frame.setGeometry(QtCore.QRect(0, 0, 831, 61))
         self.frame.setStyleSheet("background-color:rgb(255, 255, 127);\n"
 "border-radius: 10px;")
         self.frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
@@ -17,7 +17,7 @@ class Ui_MainWindow(object):
         self.frame.setMidLineWidth(0)
         self.frame.setObjectName("frame")
         self.DisconnectButton = QtWidgets.QPushButton(self.frame)
-        self.DisconnectButton.setGeometry(QtCore.QRect(280, 10, 151, 41))
+        self.DisconnectButton.setGeometry(QtCore.QRect(470, 10, 151, 41))
         font = QtGui.QFont()
         font.setPointSize(12)
         font.setBold(True)
@@ -33,7 +33,7 @@ class Ui_MainWindow(object):
         self.DisconnectButton.leaveEvent = self.on_disconnect_button_leave
 
         self.ConnectButton = QtWidgets.QPushButton(self.frame)
-        self.ConnectButton.setGeometry(QtCore.QRect(30, 10, 151, 41))
+        self.ConnectButton.setGeometry(QtCore.QRect(180, 10, 151, 41))
         font = QtGui.QFont()
         font.setPointSize(12)
         font.setBold(True)
@@ -49,18 +49,18 @@ class Ui_MainWindow(object):
         self.ConnectButton.leaveEvent = self.on_connect_button_leave
 
         self.scrollArea = QtWidgets.QScrollArea(self.centralwidget)
-        self.scrollArea.setGeometry(QtCore.QRect(10, 70, 451, 281))
+        self.scrollArea.setGeometry(QtCore.QRect(10, 70, 821, 431))
         self.scrollArea.setWidgetResizable(True)
         self.scrollArea.setObjectName("scrollArea")
 
         
         self.scrollAreaWidgetContents = QtWidgets.QWidget()
-        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 449, 279))
+        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 819, 429))
         self.scrollAreaWidgetContents.setObjectName("scrollAreaWidgetContents")
         self.scrollArea.setWidget(self.scrollAreaWidgetContents)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 475, 22))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 836, 22))
         self.menubar.setObjectName("menubar")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
