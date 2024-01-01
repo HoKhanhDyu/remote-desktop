@@ -109,6 +109,14 @@ class Client:
             request = data[:image_size]
             data = data[image_size:]
             self.handle(pickle.loads(request))
+            
+    def change_size_screen(self,size):
+        width = int(size.split(' ')[0])
+        mes = {
+            'type' : 'screen_size',
+            'width' : width
+        }
+        self._send(mes)
 
     def handle(self,request):
         # print(request)
@@ -266,7 +274,9 @@ class Client:
         frames = []
         while self.recording:
             if self.capture is not None:
-                frame=np.array(self.capture)
+                image_array = np.frombuffer(self.capture, np.uint8)
+                # Đọc mảng numpy với OpenCV để tạo ảnh
+                frame = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 frames.append(np.array(frame))
 

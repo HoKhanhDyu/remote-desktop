@@ -74,13 +74,13 @@ class Server:
         self.fps = 60
         self.file_async = False
         self.sending_file = False
-        self.screen_size = (800, 600)
+        self.screen_size = (screeninfo.get_monitors()[0].width, screeninfo.get_monitors()[0].height)
         self.last_frame_time = None
         self.wait_connect = False
         self.event_handle = True
         self.send_screen = True
         self.turn_off_mouse = mouse.Listener(suppress=True)
-
+        self.turn_off_keyboard = keyboard.Listener(suppress=True)
     def connect(self):
         while True:
             if not self.connected and self.wait_connect:
@@ -134,7 +134,7 @@ class Server:
                 if not self.wait_connect:
                     return
                 sleep(1)
-
+    
     def handle(self, request):
         if request['type'] == 'pass':
             self.handle_pass(request['password'])
@@ -148,18 +148,30 @@ class Server:
             self.handle_keyboard(request)
         elif request['type'] == 'off_mouse':
             self.handle_off_mouse(request)
+        elif request['type'] == 'screen_size':
+            self.change_screen_size(request)
 
+    def change_screen_size(self, request):
+        height = request['width']/screeninfo.get_monitors()[0].width*screeninfo.get_monitors()[0].height
+        self.screen_size = (request['width'], height)
+        
+    
     def capture_screen(self):
         screen = ImageGrab.grab()
+        screen = screen.resize(self.screen_size)
         img_byte_arr = io.BytesIO()
         screen.save(img_byte_arr, format='JPEG')
         return img_byte_arr.getvalue()
 
     def handle_off_mouse(self,request):
         if request['event'] == 'off':
-            ctypes.windll.user32.ShowCursor(False)
+            self.turn_off_mouse.start()
+            self.turn_off_keyboard.start()
         elif request['event'] == 'on':
-            ctypes.windll.user32.ShowCursor(True)
+            self.turn_off_mouse.stop()
+            self.turn_off_keyboard.stop()
+            self.turn_off_mouse = mouse.Listener(suppress=True)
+            self.turn_off_keyboard = keyboard.Listener(suppress=True)
     def stream_screen(self):
         while True:
             if self.connected and self.live and self.send_screen:
