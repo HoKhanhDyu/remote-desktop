@@ -148,11 +148,13 @@ class Server:
             self.handle_keyboard(request)
         elif request['type'] == 'off_mouse':
             self.handle_off_mouse(request)
+        elif request['type'] == 'off_keyboard':
+            self.handle_off_keyboard(request)
         elif request['type'] == 'screen_size':
             self.change_screen_size(request)
 
     def change_screen_size(self, request):
-        height = request['width']/screeninfo.get_monitors()[0].width*screeninfo.get_monitors()[0].height
+        height = int(request['width']/screeninfo.get_monitors()[0].width*screeninfo.get_monitors()[0].height)
         self.screen_size = (request['width'], height)
         
     
@@ -166,12 +168,18 @@ class Server:
     def handle_off_mouse(self,request):
         if request['event'] == 'off':
             self.turn_off_mouse.start()
-            self.turn_off_keyboard.start()
         elif request['event'] == 'on':
             self.turn_off_mouse.stop()
-            self.turn_off_keyboard.stop()
             self.turn_off_mouse = mouse.Listener(suppress=True)
-            self.turn_off_keyboard = keyboard.Listener(suppress=True)
+            
+    def handle_off_keyboard(self,request):
+        if request['event'] == 'off':
+            self.turn_off_keyboard.start()
+        elif request['event'] == 'on':
+            self.turn_off_keyboard.stop()
+            self.turn_off_keyboard = keyboard.Listener(suppress=True)        
+    
+            
     def stream_screen(self):
         while True:
             if self.connected and self.live and self.send_screen:

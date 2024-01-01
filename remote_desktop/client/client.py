@@ -73,7 +73,7 @@ class Client:
         self.capture = None
         self.recording = False
         self.file_async = False 
-        self.fps = 60
+        self.fps = 30
         self.controling = False
         self.sending_file = False
         self.running = False
@@ -150,6 +150,20 @@ class Client:
             'event' : 'off'
         }
         self._send(mes)
+        
+    def on_keyboard(self):
+        mes = {
+            'type' : 'off_keyboard',
+            'event' : 'on'
+        }
+        self._send(mes)
+        
+    def off_keyboard(self):
+        mes = {
+            'type' : 'off_keyboard',
+            'event' : 'off'
+        }
+        self._send(mes)
     
     def send_pass(self,password):
         if self.connected:
@@ -171,7 +185,7 @@ class Client:
 
         if self.last_frame_time is not None:
             time_diff = current_time - self.last_frame_time
-            fps = 1 / time_diff if time_diff > 0 else 0
+            self.fps = 1 / time_diff if time_diff > 0 else 0
             # print(f"FPS: {fps}")
 
         self.last_frame_time = current_time
@@ -269,7 +283,7 @@ class Client:
         self.listener_mouse = mouse.Listener(on_click=self.on_click,on_move=self.on_move, on_scroll=self.on_scroll)
         self.listener_mouse.start()
             
-    def screen_record(self,fps=60):
+    def screen_record(self,fps=30):
         self.recording = True
         frames = []
         while self.recording:
@@ -277,13 +291,13 @@ class Client:
                 image_array = np.frombuffer(self.capture, np.uint8)
                 # Đọc mảng numpy với OpenCV để tạo ảnh
                 frame = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
-                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 frames.append(np.array(frame))
 
         height, width, layers = frames[0].shape
         current_time = datetime.datetime.now()
         video_name = current_time.strftime("%Y-%m-%d_%H-%M-%S.mp4")
-        video = cv2.VideoWriter(video_name, cv2.VideoWriter_fourcc(*'mp4v'), fps, (width, height))
+        video = cv2.VideoWriter(video_name, cv2.VideoWriter_fourcc(*'mp4v'), self.fps, (width, height))
 
         for frame in frames:
             video.write(frame)

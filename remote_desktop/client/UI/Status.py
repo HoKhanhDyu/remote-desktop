@@ -206,8 +206,10 @@ class UI_Status(object):
     def on_MonitorButton_clicked(self):
         if self.monitor_icon_flag:
             new_icon = QtGui.QIcon(":/Image/monitor.png")
+            self.server.on_keyboard()
         else:
             new_icon = QtGui.QIcon(":/Image/monitor_delete.png")
+            self.server.off_keyboard()
         self.monitorButton.setIcon(new_icon)
         self.monitor_icon_flag = not self.monitor_icon_flag
     
