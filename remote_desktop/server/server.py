@@ -80,6 +80,7 @@ class Server:
 
     def connect(self):
         while True:
+            
             if not self.connected and self.wait_connect:
                 try:
                     print('Wait connect!')
@@ -92,13 +93,24 @@ class Server:
                         self.live = True
                         self.accept_pass = True
                 except:
-                    pass
+                    if self.client_socket is None:
+                        self.disconnect()
+                        self.wait_connect = False
+                        sleep(5)
+                        self.wait_connect = True
+                        self.run()
             else:
                 if not self.wait_connect:
                     return
                 sleep(1)
 
     def _send(self, mes):
+        if self.client_socket is None:
+            self.disconnect()
+            self.wait_connect = False
+            sleep(5)
+            self.wait_connect = True
+            self.run()
         if not self.connected:
             return
         message = pickle.dumps(mes)
