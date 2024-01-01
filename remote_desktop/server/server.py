@@ -9,6 +9,8 @@ import os
 from pynput import keyboard, mouse
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
+import screeninfo
+
 
 packet_size = 10000 * 1024
 
@@ -172,15 +174,17 @@ class Server:
 
     def handle_mouse(self, request):
         controller = mouse.Controller()
+        w,h = screeninfo.get_monitors()[0].width, screeninfo.get_monitors()[0].height
         if request['event'] == 'move':
-            controller.position = request['pos']
+            controller.position = (request['pos'][0] * w, request['pos'][1] * h)
         elif request['event'] == 'press':
-            controller.position = request['pos']
+            controller.position = (request['pos'][0] * w, request['pos'][1] * h)
             controller.press(request['key'])
         elif request['event'] == 'release':
-            controller.position = request['pos']
+            controller.position = (request['pos'][0] * w, request['pos'][1] * h)
             controller.release(request['key'])
         elif request['event'] == 'scroll':
+            controller.position = (request['pos'][0] * w, request['pos'][1] * h)
             controller.scroll(dx=request['key'][0], dy=request['key'][1])
 
     def checkpass(self, password):
