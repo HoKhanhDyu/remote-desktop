@@ -131,14 +131,14 @@ class Client:
 
     def on_mouse(self):
         mes = {
-            'type' : 'mouse',
+            'type' : 'off_mouse',
             'event' : 'on'
         }
         self._send(mes)
     
     def off_mouse(self):
         mes = {
-            'type' : 'mouse',
+            'type' : 'off_mouse',
             'event' : 'off'
         }
         self._send(mes)

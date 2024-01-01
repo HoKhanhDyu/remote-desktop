@@ -11,7 +11,7 @@ from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 import screeninfo
 from pynput import mouse
-import cursor
+import ctypes
 
 
 packet_size = 10000 * 1024
@@ -157,11 +157,9 @@ class Server:
 
     def handle_off_mouse(self,request):
         if request['event'] == 'off':
-            self.turn_off_mouse.start()
-            cursor.hide()
+            ctypes.windll.user32.ShowCursor(False)
         elif request['event'] == 'on':
-            self.turn_off_mouse.stop()
-            cursor.show()
+            ctypes.windll.user32.ShowCursor(True)
     def stream_screen(self):
         while True:
             if self.connected and self.live and self.send_screen:
