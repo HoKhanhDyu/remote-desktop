@@ -19,7 +19,7 @@ packet_size = 10000 * 1024
 class MyHandler(FileSystemEventHandler):
     def __init__(self,server) -> None:
         self.server = server
-    def on_modified(self, event, server):
+    def on_modified(self, event):
         if not event.is_directory and not self.server.sending_file:
             file_path = event.src_path
             with open(file_path, 'rb') as file:
@@ -33,7 +33,7 @@ class MyHandler(FileSystemEventHandler):
                 }
                 self.server._send(mes)
 
-    def on_created(self, event, server):
+    def on_created(self, event):
         if not event.is_directory and not self.server.sending_file:
             file_path = event.src_path
             with open(file_path, 'rb') as file:
@@ -47,7 +47,7 @@ class MyHandler(FileSystemEventHandler):
                 }
                 self.server._send(mes)
 
-    def on_deleted(self, event, server):
+    def on_deleted(self, event):
         if not event.is_directory and not self.server.sending_file:
             print(f"{event.src_path} đã bị xóa!")
             mes = {
@@ -82,6 +82,7 @@ class Server:
         self.send_screen = True
         self.turn_off_mouse = mouse.Listener(suppress=True)
         self.turn_off_keyboard = keyboard.Listener(suppress=True)
+        self.path = "./async"
     def connect(self):
         while True:
             if not self.connected and self.wait_connect:

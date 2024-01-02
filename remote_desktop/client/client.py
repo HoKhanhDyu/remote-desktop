@@ -19,7 +19,7 @@ sizefile = 100*1024
 class MyHandler(FileSystemEventHandler):
     def __init__(self,server) -> None:
         self.server = server
-    def on_modified(self, event, server):
+    def on_modified(self, event):
         if not event.is_directory and not self.server.sending_file:
             file_path = event.src_path
             with open(file_path, 'rb') as file:
@@ -33,7 +33,7 @@ class MyHandler(FileSystemEventHandler):
                 }
                 self.server._send(mes)
 
-    def on_created(self, event, server):
+    def on_created(self, event):
         if not event.is_directory and not self.server.sending_file:
             file_path = event.src_path
             with open(file_path, 'rb') as file:
@@ -47,7 +47,7 @@ class MyHandler(FileSystemEventHandler):
                 }
                 self.server._send(mes)
 
-    def on_deleted(self, event, server):
+    def on_deleted(self, event):
         if not event.is_directory and not self.server.sending_file:
             print(f"{event.src_path} đã bị xóa!")
             mes = {
@@ -82,7 +82,7 @@ class Client:
         self.press = False
         self.listener_key = None
         self.listener_mouse = None
-        self.path = 'D:/async'
+        self.path = './async'
 
     def _send(self,mes):        
         if not self.connected:
@@ -295,7 +295,7 @@ class Client:
 
         height, width, layers = frames[0].shape
         current_time = datetime.datetime.now()
-        video_name = current_time.strftime("%Y-%m-%d_%H-%M-%S.mp4")
+        video_name = "./video_image/"+current_time.strftime("%Y-%m-%d_%H-%M-%S.mp4")
         video = cv2.VideoWriter(video_name, cv2.VideoWriter_fourcc(*'mp4v'), self.fps, (width, height))
 
         for frame in frames:
@@ -314,7 +314,7 @@ class Client:
     def save_screen(self):
         if self.capture is not None:
             current_time = datetime.datetime.now()
-            pic_name = current_time.strftime("%Y-%m-%d_%H-%M-%S.png")
+            pic_name = "./video_image/"+ current_time.strftime("%Y-%m-%d_%H-%M-%S.png")
             file = io.BytesIO(self.capture)
             image = Image.open(file)
             image.save(pic_name)
