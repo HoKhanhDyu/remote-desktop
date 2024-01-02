@@ -29,10 +29,10 @@ class Ui_MainWindow(object):
         "}\n"
         "\n"
         "QCheckBox::indicator::checked{\n"
-        "image:url(\"C:/Users/hokha/OneDrive - VNU-HCMUS/Desktop/Workplace/qt/mycollection/png/001-switch-on.png\")\n"
+        "image:url(\"./remote_desktop/server/UI/icon/001-switch-on.png\")\n"
         "}\n"
         "\n"
-        "QCheckBox::indicator::unchecked{image:url(\"C:/Users/hokha/OneDrive - VNU-HCMUS/Desktop/Workplace/qt/mycollection/png/002-switch-off.png\")\n"
+        "QCheckBox::indicator::unchecked{image:url(\"./remote_desktop/server/UI/icon/002-switch-off.png\")\n"
         "}\n"
         "")
         self.checkBox.setText("")
@@ -51,7 +51,7 @@ class Ui_MainWindow(object):
         self.pushButton_2.setText("")
         self.pushButton_2.clicked.connect(self.openWindow2)
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap("C:/Users/hokha/OneDrive - VNU-HCMUS/Desktop/Workplace/qt/png/001-filter.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon.addPixmap(QtGui.QPixmap("./remote_desktop/server/UI/icon/001-filter.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.pushButton_2.setIcon(icon)
         self.pushButton_2.setObjectName("pushButton_2")
         MainWindow.setCentralWidget(self.centralwidget)

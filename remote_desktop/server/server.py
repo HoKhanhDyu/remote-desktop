@@ -11,7 +11,6 @@ from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 import screeninfo
 from pynput import mouse
-import ctypes
 
 
 packet_size = 10000 * 1024

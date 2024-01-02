@@ -2,4 +2,6 @@ Pillow
 pynput
 numpy
 opencv-python
-
+PyQt5
+screeninfo
+watchdog
