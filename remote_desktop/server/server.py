@@ -17,8 +17,10 @@ packet_size = 10000 * 1024
 
 
 class MyHandler(FileSystemEventHandler):
+    def __init__(self,server) -> None:
+        self.server = server
     def on_modified(self, event, server):
-        if not event.is_directory and not server.sending_file:
+        if not event.is_directory and not self.server.sending_file:
             file_path = event.src_path
             with open(file_path, 'rb') as file:
                 data = file.read()
@@ -29,10 +31,10 @@ class MyHandler(FileSystemEventHandler):
                     'data': data,
                     'path': file_path
                 }
-                server._send(mes)
+                self.server._send(mes)
 
     def on_created(self, event, server):
-        if not event.is_directory and not server.sending_file:
+        if not event.is_directory and not self.server.sending_file:
             file_path = event.src_path
             with open(file_path, 'rb') as file:
                 data = file.read()
@@ -43,17 +45,17 @@ class MyHandler(FileSystemEventHandler):
                     'data': data,
                     'path': file_path
                 }
-                server._send(mes)
+                self.server._send(mes)
 
     def on_deleted(self, event, server):
-        if not event.is_directory and not server.sending_file:
+        if not event.is_directory and not self.server.sending_file:
             print(f"{event.src_path} đã bị xóa!")
             mes = {
                 'type': 'file',
                 'event': 'deleted',
                 'path': event.src_path
             }
-            server._send(mes)
+            self.server._send(mes)
 
 
 class Server:
