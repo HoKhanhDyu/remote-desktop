@@ -11,15 +11,16 @@ from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 import screeninfo
 from pynput import mouse
-import ctypes
 
 
 packet_size = 10000 * 1024
 
 
 class MyHandler(FileSystemEventHandler):
-    def on_modified(self, event, server):
-        if not event.is_directory and not server.sending_file:
+    def __init__(self,server) -> None:
+        self.server = server
+    def on_modified(self, event):
+        if not event.is_directory and not self.server.sending_file:
             file_path = event.src_path
             with open(file_path, 'rb') as file:
                 data = file.read()
@@ -30,10 +31,10 @@ class MyHandler(FileSystemEventHandler):
                     'data': data,
                     'path': file_path
                 }
-                server._send(mes)
+                self.server._send(mes)
 
-    def on_created(self, event, server):
-        if not event.is_directory and not server.sending_file:
+    def on_created(self, event):
+        if not event.is_directory and not self.server.sending_file:
             file_path = event.src_path
             with open(file_path, 'rb') as file:
                 data = file.read()
@@ -44,17 +45,17 @@ class MyHandler(FileSystemEventHandler):
                     'data': data,
                     'path': file_path
                 }
-                server._send(mes)
+                self.server._send(mes)
 
-    def on_deleted(self, event, server):
-        if not event.is_directory and not server.sending_file:
+    def on_deleted(self, event):
+        if not event.is_directory and not self.server.sending_file:
             print(f"{event.src_path} đã bị xóa!")
             mes = {
                 'type': 'file',
                 'event': 'deleted',
                 'path': event.src_path
             }
-            server._send(mes)
+            self.server._send(mes)
 
 
 class Server:
@@ -81,6 +82,7 @@ class Server:
         self.send_screen = True
         self.turn_off_mouse = mouse.Listener(suppress=True)
         self.turn_off_keyboard = keyboard.Listener(suppress=True)
+        self.path = "./async"
     def connect(self):
         while True:
             if not self.connected and self.wait_connect:

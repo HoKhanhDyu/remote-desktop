@@ -288,7 +288,7 @@ class MainWindow(QMainWindow):
         table_widget.setColumnWidth(0, ip_column_width)
         
         # Set headers
-        headers = ["IP", "Image"]
+        headers = ["IP", "Screen"]
         table_widget.setHorizontalHeaderLabels(headers)
 
         # Add rows to the table for each student

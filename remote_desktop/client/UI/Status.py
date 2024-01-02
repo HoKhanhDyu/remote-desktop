@@ -30,7 +30,7 @@ class UI_Status(object):
         self.powerButton.setStyleSheet("background-color: rgb(255, 255, 255);")
         self.powerButton.setText("")
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap(":/Image/power_Button.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon.addPixmap(QtGui.QPixmap("./remote_desktop/client/UI/icon/power_Button.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.powerButton.setIcon(icon)
         self.powerButton.setObjectName("powerButton")
         # Set up de nut thay doi mau khi con chuot cham vao
@@ -45,7 +45,7 @@ class UI_Status(object):
         self.ScreenShotButton.setStyleSheet("background-color: rgb(255, 255, 255);")
         self.ScreenShotButton.setText("")
         icon1 = QtGui.QIcon()
-        icon1.addPixmap(QtGui.QPixmap(":/Image/camera.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon1.addPixmap(QtGui.QPixmap("./remote_desktop/client/UI/icon/camera.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.ScreenShotButton.setIcon(icon1)
         self.ScreenShotButton.setObjectName("ScreenShotButton")
         # Set up de nut thay doi mau khi con chuot cham vao
@@ -60,7 +60,7 @@ class UI_Status(object):
         self.RecorderButton.setStyleSheet("background-color: rgb(255, 255, 255);")
         self.RecorderButton.setText("")
         icon2 = QtGui.QIcon()
-        icon2.addPixmap(QtGui.QPixmap(":/Image/recorder.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon2.addPixmap(QtGui.QPixmap("./remote_desktop/client/UI/icon/recorder.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.RecorderButton.setIcon(icon2)
         self.RecorderButton.setObjectName("RecorderButton")
         # Set up de nut thay doi mau khi con chuot cham vao
@@ -75,7 +75,7 @@ class UI_Status(object):
         self.MouseButton.setStyleSheet("background-color: rgb(255, 255, 255);")
         self.MouseButton.setText("")
         icon3 = QtGui.QIcon()
-        icon3.addPixmap(QtGui.QPixmap(":/Image/mouse.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon3.addPixmap(QtGui.QPixmap("./remote_desktop/client/UI/icon/mouse.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.MouseButton.setIcon(icon3)
         self.MouseButton.setObjectName("MouseButton")
         # Set up khi nut duoc click
@@ -92,7 +92,7 @@ class UI_Status(object):
         self.monitorButton.setStyleSheet("background-color: rgb(255, 255, 255);")
         self.monitorButton.setText("")
         icon4 = QtGui.QIcon()
-        icon4.addPixmap(QtGui.QPixmap(":/Image/monitor.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon4.addPixmap(QtGui.QPixmap("./remote_desktop/client/UI/icon/monitor.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.monitorButton.setIcon(icon4)
         self.monitorButton.setObjectName("monitorButton")
         # Set up khi nut duoc click
@@ -119,7 +119,7 @@ class UI_Status(object):
         self.FileButton.setStyleSheet("background-color: rgb(255, 255, 255);")
         self.FileButton.setText("")
         icon5 = QtGui.QIcon()
-        icon5.addPixmap(QtGui.QPixmap(":/Image/file.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon5.addPixmap(QtGui.QPixmap("./remote_desktop/client/UI/icon/file.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.FileButton.setIcon(icon5)
         self.FileButton.setObjectName("FileButton")
         # Set up khi nut duoc click
@@ -181,10 +181,10 @@ class UI_Status(object):
     # Khi nut MouseButton duoc nhan
     def on_MouseButton_clicked(self):
         if self.mouse_icon_flag: # Tuy thuoc vao True/False se lua chon Icon de thay cho button
-            new_icon = QtGui.QIcon(":/Image/mouse.png")
+            new_icon = QtGui.QIcon("./remote_desktop/client/UI/icon/mouse.png")
             self.server.on_mouse()
         else:
-            new_icon = QtGui.QIcon(":/Image/mouse_delete.png")
+            new_icon = QtGui.QIcon("./remote_desktop/client/UI/icon/mouse_delete.png")
             self.server.off_mouse()
             
 
@@ -205,10 +205,10 @@ class UI_Status(object):
         
     def on_MonitorButton_clicked(self):
         if self.monitor_icon_flag:
-            new_icon = QtGui.QIcon(":/Image/monitor.png")
+            new_icon = QtGui.QIcon("./remote_desktop/client/UI/icon/monitor.png")
             self.server.on_keyboard()
         else:
-            new_icon = QtGui.QIcon(":/Image/monitor_delete.png")
+            new_icon = QtGui.QIcon("./remote_desktop/client/UI/icon/monitor_delete.png")
             self.server.off_keyboard()
         self.monitorButton.setIcon(new_icon)
         self.monitor_icon_flag = not self.monitor_icon_flag
@@ -229,10 +229,10 @@ class UI_Status(object):
 
     def on_RecorderButton_clicked(self):
         if self.recording: # Tuy thuoc vao True/False se lua chon Icon de thay cho button
-            new_icon = QtGui.QIcon(":/Image/recorder.png")
+            new_icon = QtGui.QIcon("./remote_desktop/client/UI/icon/recorder.png")
             self.server.start_record()
         else:
-            new_icon = QtGui.QIcon(":/Image/recorder.png")
+            new_icon = QtGui.QIcon("./remote_desktop/client/UI/icon/recorder.png")
             self.server.stop_record()
             
 

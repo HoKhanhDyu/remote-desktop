@@ -17,46 +17,45 @@ from watchdog.events import FileSystemEventHandler
 sizefile = 100*1024
 
 class MyHandler(FileSystemEventHandler):
+    def __init__(self,server) -> None:
+        self.server = server
     def on_modified(self, event):
-        if not event.is_directory and not client.sending_file:
+        if not event.is_directory and not self.server.sending_file:
             file_path = event.src_path
             with open(file_path, 'rb') as file:
                 data = file.read()
                 print(f"File đã thay đổi: {file_path}")
                 mes = {
-                    'type' : 'file',
-                    'event' : 'modified',
-                    'data' : data,
-                    'path' : file_path
+                    'type': 'file',
+                    'event': 'modified',
+                    'data': data,
+                    'path': file_path
                 }
-                client._send(mes)
-                # sleep(5)
-        
+                self.server._send(mes)
+
     def on_created(self, event):
-        if not event.is_directory and not client.sending_file:
+        if not event.is_directory and not self.server.sending_file:
             file_path = event.src_path
             with open(file_path, 'rb') as file:
                 data = file.read()
                 print(f"{file_path} đã được tạo!")
                 mes = {
-                    'type' : 'file',
-                    'event' : 'created',
-                    'data' : data,
-                    'path' : file_path
+                    'type': 'file',
+                    'event': 'created',
+                    'data': data,
+                    'path': file_path
                 }
-                client._send(mes)
-                # sleep(5)
+                self.server._send(mes)
 
     def on_deleted(self, event):
-        if not event.is_directory and not client.sending_file:
+        if not event.is_directory and not self.server.sending_file:
             print(f"{event.src_path} đã bị xóa!")
-            mes = { 
-                'type' : 'file',
-                'event' : 'deleted',
-                'path' : event.src_path
-            }   
-            client._send(mes)
-            # sleep(5)r
+            mes = {
+                'type': 'file',
+                'event': 'deleted',
+                'path': event.src_path
+            }
+            self.server._send(mes)
 class Client:
     def __init__(self,host,port=8888) -> None:
         self.server_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
@@ -83,7 +82,7 @@ class Client:
         self.press = False
         self.listener_key = None
         self.listener_mouse = None
-        self.path = 'D:/async'
+        self.path = './async'
 
     def _send(self,mes):        
         if not self.connected:
@@ -296,7 +295,7 @@ class Client:
 
         height, width, layers = frames[0].shape
         current_time = datetime.datetime.now()
-        video_name = current_time.strftime("%Y-%m-%d_%H-%M-%S.mp4")
+        video_name = "./video_image/"+current_time.strftime("%Y-%m-%d_%H-%M-%S.mp4")
         video = cv2.VideoWriter(video_name, cv2.VideoWriter_fourcc(*'mp4v'), self.fps, (width, height))
 
         for frame in frames:
@@ -315,7 +314,7 @@ class Client:
     def save_screen(self):
         if self.capture is not None:
             current_time = datetime.datetime.now()
-            pic_name = current_time.strftime("%Y-%m-%d_%H-%M-%S.png")
+            pic_name = "./video_image/"+ current_time.strftime("%Y-%m-%d_%H-%M-%S.png")
             file = io.BytesIO(self.capture)
             image = Image.open(file)
             image.save(pic_name)
@@ -337,7 +336,7 @@ class Client:
             item_path = os.path.join(self.path, item)
             if os.path.isfile(item_path) or os.path.islink(item_path):
                 os.remove(item_path)
-        event_handler = MyHandler()
+        event_handler = MyHandler(self)
         observer = Observer()
         observer.schedule(event_handler, self.path, recursive=False)
         observer.start()
