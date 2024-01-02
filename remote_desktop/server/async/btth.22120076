@@ -1,0 +1,39 @@
+###################################################
+#                                                 #
+#     Bai thi thuc hanh Xac Suat Thong Ke 2023    #
+#                                                 #
+###################################################
+# Ho va ten: Ho Khanh Duy
+# MSSV:22120076
+# Ca:2
+# Nhom: 
+
+
+# Cau 1.
+test = prop.test(20,100,alternative = "two.sided",conf.level = 0.95)
+test$p.value
+cat(ifelse(test$p.value<0.05,"Bac bo H0","Khong the bac bo H0"))
+# Cau 2.
+# a
+data = read.csv(file.choose(),header=T)
+attach(data)
+names(data)
+ci.mean = function(x,alpha){
+	mean = mean(x)
+	sdx = sd(x)
+	n = length(x)
+	k = qt(1-alpha/2,df = n-1)*sdx/sqrt(n)
+	cat("Khang tin cay ",mean-k," ",mean+k)
+}
+ci.mean(data$time[data$treatment==0],0.05)
+ci.mean(data$time[data$treatment==1],0.05)
+# b
+test = t.test(data$time[data$treatment==1],alternative = "greater",mu = 970,, conf.level = 0.95)
+test$p.value
+cat(ifelse(test$p.value<0.05,"Bac bo H0","Khong the bac bo H0"))
+# c
+tongchuot = sum(data$time<400)
+chuotthuong = sum(data$time<400&data$treatment==1)
+test =prop.test,tongchuot,chuotthuong,p=0.5,alternative="less",conf.level=0.95)
+test$p.value
+cat(ifelse(test$p.value<0.05,"Bac bo H0","Khong the bac bo H0"))

@@ -21,6 +21,7 @@ class MyHandler(FileSystemEventHandler):
         self.server = server
     def on_modified(self, event):
         if not event.is_directory and not self.server.sending_file:
+            sleep(1)
             file_path = event.src_path
             with open(file_path, 'rb') as file:
                 data = file.read()
@@ -35,6 +36,7 @@ class MyHandler(FileSystemEventHandler):
 
     def on_created(self, event):
         if not event.is_directory and not self.server.sending_file:
+            sleep(1)
             file_path = event.src_path
             with open(file_path, 'rb') as file:
                 data = file.read()
@@ -49,6 +51,7 @@ class MyHandler(FileSystemEventHandler):
 
     def on_deleted(self, event):
         if not event.is_directory and not self.server.sending_file:
+            sleep(1)
             print(f"{event.src_path} đã bị xóa!")
             mes = {
                 'type': 'file',
@@ -87,7 +90,7 @@ class Client:
     def _send(self,mes):        
         if not self.connected:
             return
-        print(mes)
+        print(mes['type'])
         message = pickle.dumps(mes)
         packet = struct.pack('Q',len(message))+message
         self.server_socket.sendall(packet)
@@ -408,9 +411,6 @@ class Client:
             
             
 # client = Client('127.0.0.1', 8888)
-# client.run()
-# client.send_pass('zx')    
-# sleep(3)
-# client.send_pass('zxc')
-# sleep(5)
-# client.disconnect()
+# client.run_screen()
+# client.start_sync()
+# # client.disconnect()
