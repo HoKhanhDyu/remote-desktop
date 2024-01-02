@@ -2,7 +2,6 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from UI.st import Ui_Form
-from UI.ip import Ui_ip_Form
 from UI.ip1 import Ui_Dialog
 from server import Server
 from time import sleep

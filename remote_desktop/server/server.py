@@ -20,6 +20,7 @@ class MyHandler(FileSystemEventHandler):
     def __init__(self,server) -> None:
         self.server = server
     def on_modified(self, event):
+        sleep(1)
         if not event.is_directory and not self.server.sending_file:
             file_path = event.src_path
             with open(file_path, 'rb') as file:
@@ -35,6 +36,7 @@ class MyHandler(FileSystemEventHandler):
 
     def on_created(self, event):
         if not event.is_directory and not self.server.sending_file:
+            sleep(1)
             file_path = event.src_path
             with open(file_path, 'rb') as file:
                 data = file.read()
@@ -50,6 +52,7 @@ class MyHandler(FileSystemEventHandler):
     def on_deleted(self, event):
         if not event.is_directory and not self.server.sending_file:
             print(f"{event.src_path} đã bị xóa!")
+            sleep(1)
             mes = {
                 'type': 'file',
                 'event': 'deleted',
@@ -114,7 +117,7 @@ class Server:
         if self.last_frame_time is not None:
             time_diff = current_time - self.last_frame_time
             fps = 1 / time_diff if time_diff > 0 else 0
-            print(f"FPS: {fps}")
+            # print(f"FPS: {fps}")
 
         self.last_frame_time = current_time
 
@@ -286,6 +289,8 @@ class Server:
 
     def handle_file(self, mes):
         self.sending_file = True
+        # if not os.path.exists(mes['path']):
+        #     os.makedirs(mes['path'])
         if mes['event'] == 'created':
             with open(mes['path'], 'wb') as file:
                 file.write(mes['data'])
@@ -312,3 +317,4 @@ class Server:
 
 # server = Server('127.0.0.1', 8888)
 # server.run()
+# server.start_sync()

@@ -284,7 +284,8 @@ class UI_Status(object):
         self.FileButton.setStyleSheet("background-color: white")
 
     def on_FileButton_clicked(self):
-        os.startfile(self.server.path)
+        # os.startfile(self.server.path)
+        os.startfile('async')
         print("File Button Clicked")
 
 # if __name__ == "__main__":
