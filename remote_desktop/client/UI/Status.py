@@ -92,7 +92,7 @@ class UI_Status(object):
         self.monitorButton.setStyleSheet("background-color: rgb(255, 255, 255);")
         self.monitorButton.setText("")
         icon4 = QtGui.QIcon()
-        icon4.addPixmap(QtGui.QPixmap("./remote_desktop/client/UI/icon/monitor.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon4.addPixmap(QtGui.QPixmap("./remote_desktop/client/UI/icon/keyboard.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.monitorButton.setIcon(icon4)
         self.monitorButton.setObjectName("monitorButton")
         # Set up khi nut duoc click
@@ -205,10 +205,10 @@ class UI_Status(object):
         
     def on_MonitorButton_clicked(self):
         if self.monitor_icon_flag:
-            new_icon = QtGui.QIcon("./remote_desktop/client/UI/icon/monitor.png")
+            new_icon = QtGui.QIcon("./remote_desktop/client/UI/icon/keyboard.png")
             self.server.on_keyboard()
         else:
-            new_icon = QtGui.QIcon("./remote_desktop/client/UI/icon/monitor_delete.png")
+            new_icon = QtGui.QIcon("./remote_desktop/client/UI/icon/keyboard_delete.png")
             self.server.off_keyboard()
         self.monitorButton.setIcon(new_icon)
         self.monitor_icon_flag = not self.monitor_icon_flag
@@ -237,7 +237,7 @@ class UI_Status(object):
             
 
         #Set up button moi cho Button
-        self.MouseButton.setIcon(new_icon)
+        self.RecorderButton.setIcon(new_icon)
         # Doi true -> fale hoac nguoc lai
         self.recording = not self.recording
         print("Recorder clicked")
