@@ -295,6 +295,7 @@ class Client:
                 frame = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
                 # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 frames.append(np.array(frame))
+                sleep(1/fps)
 
         height, width, layers = frames[0].shape
         current_time = datetime.datetime.now()
@@ -372,22 +373,6 @@ class Client:
     
     def stop_sync(self):
         self.file_async = False
-        
-    def show_fullscreen_video(self):
-        # Tạo cửa sổ với thuộc tính toàn màn hình
-        cv2.namedWindow("Server", cv2.WND_PROP_FULLSCREEN)
-        cv2.setWindowProperty("Server", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
-        while True:
-            frame=np.array(self.capture)
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            # self.capture.show()
-            cv2.imshow("Server", frame)
-            # Thoát khi nhấn phím 'q' hoặc kết thúc video
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
-
-        # Khi xong, giải phóng và đóng tất cả
-        cv2.destroyAllWindows()
 
     
     def run_screen(self):
