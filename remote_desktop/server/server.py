@@ -77,9 +77,9 @@ class Server:
         self.port = port
         self.server_socket.bind((self.host, self.port))
         self.server_socket.listen(5)
-        self.send_screen = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.send_screen.bind((self.host, 8889))
-        self.send_screen.listen(5)
+        self.sksend_screen = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sksend_screen.bind((self.host, 8889))
+        self.sksend_screen.listen(5)
         self.server_socket.settimeout(5)
         self.client_socket, self.client_address = None, None
         self.connected = False
@@ -208,25 +208,29 @@ class Server:
     
             
     def stream_screen(self):
-        client_socket, client_address = None, None
+        skclient_socket, client_address = None, None
         while True:
-            
             if self.connected and self.live and self.send_screen:
-                if client_socket is None:
-                    client_socket, client_address = self.send_screen.accept()
-                image = self.capture_screen()
-                message = pickle.dumps(image)
-                packet = struct.pack('Q', len(message)) + message
-                self.client_socket.sendall(packet)
+                print('ok')
+                try:
+                    if skclient_socket is None:
+                        print('ok2')
+                        skclient_socket, client_address = self.sksend_screen.accept()
+                    image = self.capture_screen()
+                    message = pickle.dumps(image)
+                    packet = struct.pack('Q', len(message)) + message
+                    skclient_socket.sendall(packet)
+                except:
+                    sleep(1)
                     
             else:
                 try:
-                    if client_socket:
-                        client_socket.close()
+                    if skclient_socket:
+                        skclient_socket.close()
                 except:
                     pass
                 finally:
-                    client_socket = None
+                    skclient_socket = None
                 if not self.wait_connect:
                     return
                 sleep(1)

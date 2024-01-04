@@ -70,6 +70,8 @@ class MyHandler(FileSystemEventHandler):
             pass
 class Client:
     def __init__(self,host,port=8888) -> None:
+        self.host = host
+        self.port = port
         self.server_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
         self.have_pass = None
         try:
@@ -131,9 +133,9 @@ class Client:
         self._send(mes)
 
     def handle(self,request):
-        # print(request)
-        if request['type']=='file':
-            print(request)
+        print(request)
+        # if request['type']=='file':
+        #     print(request)
         if request['type']=='pass':
             self.handle_pass(request)
         elif request['type']=='screen':
@@ -197,15 +199,15 @@ class Client:
         data = b''
         while not self.connected or not self.accepted:
             sleep(1)
-        server_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-        server_socket.connect((self.host, 8889))
+        skserver_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+        skserver_socket.connect((self.host, 8889))
         while self.connected:
             while len(data)<header:
-                data += server_socket.recv(sizefile)
+                data += skserver_socket.recv(sizefile)
             image_size = struct.unpack('Q',data[:header])[0]
             data = data[header:]
             while len(data) < image_size:
-                data += server_socket.recv(sizefile)
+                data += skserver_socket.recv(sizefile)
             request = data[:image_size]
             data = data[image_size:]
             self.stream_screen(pickle.loads(request))
