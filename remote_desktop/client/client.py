@@ -20,45 +20,54 @@ class MyHandler(FileSystemEventHandler):
     def __init__(self,server) -> None:
         self.server = server
     def on_modified(self, event):
-        if not event.is_directory and not self.server.sending_file:
-            sleep(1)
-            file_path = event.src_path
-            with open(file_path, 'rb') as file:
-                data = file.read()
-                print(f"File đã thay đổi: {file_path}")
-                mes = {
-                    'type': 'file',
-                    'event': 'modified',
-                    'data': data,
-                    'path': file_path
-                }
-                self.server._send(mes)
+        try:
+            if not event.is_directory and not self.server.sending_file:
+                sleep(1)
+                file_path = event.src_path
+                with open(file_path, 'rb') as file:
+                    data = file.read()
+                    print(f"File đã thay đổi: {file_path}")
+                    mes = {
+                        'type': 'file',
+                        'event': 'modified',
+                        'data': data,
+                        'path': file_path
+                    }
+                    self.server._send(mes)
+        except:
+            pass
 
     def on_created(self, event):
-        if not event.is_directory and not self.server.sending_file:
-            sleep(1)
-            file_path = event.src_path
-            with open(file_path, 'rb') as file:
-                data = file.read()
-                print(f"{file_path} đã được tạo!")
-                mes = {
-                    'type': 'file',
-                    'event': 'created',
-                    'data': data,
-                    'path': file_path
-                }
-                self.server._send(mes)
+        try:
+            if not event.is_directory and not self.server.sending_file:
+                sleep(1)
+                file_path = event.src_path
+                with open(file_path, 'rb') as file:
+                    data = file.read()
+                    print(f"{file_path} đã được tạo!")
+                    mes = {
+                        'type': 'file',
+                        'event': 'created',
+                        'data': data,
+                        'path': file_path
+                    }
+                    self.server._send(mes)
+        except:
+            pass
 
     def on_deleted(self, event):
-        if not event.is_directory and not self.server.sending_file:
-            sleep(1)
-            print(f"{event.src_path} đã bị xóa!")
-            mes = {
-                'type': 'file',
-                'event': 'deleted',
-                'path': event.src_path
-            }
-            self.server._send(mes)
+        try:
+            if not event.is_directory and not self.server.sending_file:
+                sleep(1)
+                print(f"{event.src_path} đã bị xóa!")
+                mes = {
+                    'type': 'file',
+                    'event': 'deleted',
+                    'path': event.src_path
+                }
+                self.server._send(mes)
+        except:
+            pass
 class Client:
     def __init__(self,host,port=8888) -> None:
         self.server_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
@@ -181,9 +190,29 @@ class Client:
         # image = io.BytesIO(dimage)
         # self.capture = Image.open(image)
         self.capture = dimage
+    
+    def recive_screen(self):
+        global sizefile
+        header = struct.calcsize('Q')
+        data = b''
+        while not self.connected or not self.accepted:
+            sleep(1)
+        server_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+        server_socket.connect((self.host, 8889))
+        while self.connected:
+            while len(data)<header:
+                data += server_socket.recv(sizefile)
+            image_size = struct.unpack('Q',data[:header])[0]
+            data = data[header:]
+            while len(data) < image_size:
+                data += server_socket.recv(sizefile)
+            request = data[:image_size]
+            data = data[image_size:]
+            self.stream_screen(pickle.loads(request))
         
-    def stream_screen(self,request):
-        self.update_capture(request['image'])
+    
+    def stream_screen(self,image):
+        self.update_capture(image)
         current_time = time()
 
         if self.last_frame_time is not None:
@@ -379,6 +408,7 @@ class Client:
     def run_screen(self):
         self.running = True
         Thread(target=self.get_request).start()
+        Thread(target=self.recive_screen).start()
     
     def run_listener(self):
         Thread(target=self.keyboard_listener).start()

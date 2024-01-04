@@ -20,45 +20,54 @@ class MyHandler(FileSystemEventHandler):
     def __init__(self,server) -> None:
         self.server = server
     def on_modified(self, event):
-        sleep(1)
-        if not event.is_directory and not self.server.sending_file:
-            file_path = event.src_path
-            with open(file_path, 'rb') as file:
-                data = file.read()
-                print(f"File đã thay đổi: {file_path}")
-                mes = {
-                    'type': 'file',
-                    'event': 'modified',
-                    'data': data,
-                    'path': file_path
-                }
-                self.server._send(mes)
+        try:
+            if not event.is_directory and not self.server.sending_file:
+                sleep(1)
+                file_path = event.src_path
+                with open(file_path, 'rb') as file:
+                    data = file.read()
+                    print(f"File đã thay đổi: {file_path}")
+                    mes = {
+                        'type': 'file',
+                        'event': 'modified',
+                        'data': data,
+                        'path': file_path
+                    }
+                    self.server._send(mes)
+        except:
+            pass
 
     def on_created(self, event):
-        if not event.is_directory and not self.server.sending_file:
-            sleep(1)
-            file_path = event.src_path
-            with open(file_path, 'rb') as file:
-                data = file.read()
-                print(f"{file_path} đã được tạo!")
-                mes = {
-                    'type': 'file',
-                    'event': 'created',
-                    'data': data,
-                    'path': file_path
-                }
-                self.server._send(mes)
+        try:
+            if not event.is_directory and not self.server.sending_file:
+                sleep(1)
+                file_path = event.src_path
+                with open(file_path, 'rb') as file:
+                    data = file.read()
+                    print(f"{file_path} đã được tạo!")
+                    mes = {
+                        'type': 'file',
+                        'event': 'created',
+                        'data': data,
+                        'path': file_path
+                    }
+                    self.server._send(mes)
+        except:
+            pass
 
     def on_deleted(self, event):
-        if not event.is_directory and not self.server.sending_file:
-            print(f"{event.src_path} đã bị xóa!")
-            sleep(1)
-            mes = {
-                'type': 'file',
-                'event': 'deleted',
-                'path': event.src_path
-            }
-            self.server._send(mes)
+        try:
+            if not event.is_directory and not self.server.sending_file:
+                sleep(1)
+                print(f"{event.src_path} đã bị xóa!")
+                mes = {
+                    'type': 'file',
+                    'event': 'deleted',
+                    'path': event.src_path
+                }
+                self.server._send(mes)
+        except:
+            pass
 
 
 class Server:
@@ -68,6 +77,9 @@ class Server:
         self.port = port
         self.server_socket.bind((self.host, self.port))
         self.server_socket.listen(5)
+        self.send_screen = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.send_screen.bind((self.host, 8889))
+        self.send_screen.listen(5)
         self.server_socket.settimeout(5)
         self.client_socket, self.client_address = None, None
         self.connected = False
@@ -196,15 +208,25 @@ class Server:
     
             
     def stream_screen(self):
+        client_socket, client_address = None, None
         while True:
+            
             if self.connected and self.live and self.send_screen:
+                if client_socket is None:
+                    client_socket, client_address = self.send_screen.accept()
                 image = self.capture_screen()
-                mes = {
-                    'type': 'screen',
-                    'image': image
-                }
-                self._send(mes)
+                message = pickle.dumps(image)
+                packet = struct.pack('Q', len(message)) + message
+                self.client_socket.sendall(packet)
+                    
             else:
+                try:
+                    if client_socket:
+                        client_socket.close()
+                except:
+                    pass
+                finally:
+                    client_socket = None
                 if not self.wait_connect:
                     return
                 sleep(1)
