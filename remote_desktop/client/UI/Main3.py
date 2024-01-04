@@ -32,7 +32,6 @@ class input_password(QDialog):
         self.add_button = QPushButton("Add", self)
         self.add_button.clicked.connect(self.ok)
 
-    
         layout.addWidget(self.password_label)
         layout.addWidget(self.password_edit)
         layout.addWidget(self.add_button)
@@ -42,6 +41,8 @@ class input_password(QDialog):
 
     def ok(self):
         self.accept()
+
+
 class Add_Server_Dialog(QDialog):
     def __init__(self, parent=None):
         super(Add_Server_Dialog, self).__init__(parent)
@@ -52,34 +53,12 @@ class Add_Server_Dialog(QDialog):
         self.ip_label = QLabel("IP:")
         self.ip_edit = QLineEdit(self)
 
-        # self.image_label = QLabel("Image:")
-        # self.image_edit = QLineEdit(self)
-        # self.browse_button = QPushButton("Browse", self)
-        # self.browse_button.clicked.connect(self.browse_image)
-
-        # self.password_label = QLabel("Password:")
-        # self.password_edit = QLineEdit(self)
-        # self.password_edit.setEchoMode(QLineEdit.Password)
-
         self.add_button = QPushButton("Add", self)
         self.add_button.clicked.connect(self.get_server)
 
-    
         layout.addWidget(self.ip_label)
         layout.addWidget(self.ip_edit)
-        # layout.addWidget(self.password_label)
-        # layout.addWidget(self.password_edit)
-        # layout.addWidget(self.image_label)
-        # layout.addWidget(self.image_edit)
-        # layout.addWidget(self.browse_button)
         layout.addWidget(self.add_button)
-
-    # def check_password(self):
-    #     password = self.password_edit.text()
-    #     if password == '123':
-    #         self.accept()
-    #     else:
-    #         QMessageBox.warning(self, 'Incorrect Password', 'Please enter the correct password.')
 
     def add_ip(self,ip):
         check_add=Client(ip)

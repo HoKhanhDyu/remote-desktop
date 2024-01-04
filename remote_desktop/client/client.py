@@ -62,6 +62,7 @@ class MyHandler(FileSystemEventHandler):
 class Client:
     def __init__(self,host,port=8888) -> None:
         self.server_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+        self.have_pass = None
         try:
             self.server_socket.connect((host, port))
             sleep(1)

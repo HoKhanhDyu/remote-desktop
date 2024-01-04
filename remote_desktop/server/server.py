@@ -13,7 +13,7 @@ import screeninfo
 from pynput import mouse
 
 
-packet_size = 10000 * 1024
+packet_size = 100 * 1024
 
 
 class MyHandler(FileSystemEventHandler):
@@ -107,37 +107,47 @@ class Server:
                 sleep(1)
 
     def _send(self, mes):
-        if not self.connected:
-            return
-        message = pickle.dumps(mes)
-        packet = struct.pack('Q', len(message)) + message
-        self.client_socket.sendall(packet)
-        current_time = time()
+        try:
+            if not self.connected:
+                return
+            message = pickle.dumps(mes)
+            packet = struct.pack('Q', len(message)) + message
+            self.client_socket.sendall(packet)
+            current_time = time()
 
-        if self.last_frame_time is not None:
-            time_diff = current_time - self.last_frame_time
-            fps = 1 / time_diff if time_diff > 0 else 0
-            # print(f"FPS: {fps}")
+            if self.last_frame_time is not None:
+                time_diff = current_time - self.last_frame_time
+                fps = 1 / time_diff if time_diff > 0 else 0
+                # print(f"FPS: {fps}")
 
-        self.last_frame_time = current_time
+            self.last_frame_time = current_time
+        except:
+            self.disconnect()
+            self.wait_connect=False
+            sleep(5)
+            self.wait_connect=True
+            self.run()
 
     def get_request(self):
         header = struct.calcsize('Q')
         data = b''
         while True:
-            if self.connected:
-                while len(data) < header:
-                    data += self.client_socket.recv(packet_size)
-                image_size = struct.unpack('Q', data[:header])[0]
-                data = data[header:]
-                while len(data) < image_size:
-                    data += self.client_socket.recv(packet_size)
-                request = data[:image_size]
-                data = data[image_size:]
-                self.handle(pickle.loads(request))
-            else:
-                if not self.wait_connect:
-                    return
+            try:
+                if self.connected:
+                    while len(data) < header:
+                        data += self.client_socket.recv(packet_size)
+                    image_size = struct.unpack('Q', data[:header])[0]
+                    data = data[header:]
+                    while len(data) < image_size:
+                        data += self.client_socket.recv(packet_size)
+                    request = data[:image_size]
+                    data = data[image_size:]
+                    self.handle(pickle.loads(request))
+                else:
+                    if not self.wait_connect:
+                        return
+                    sleep(1)
+            except:
                 sleep(1)
     
     def handle(self, request):
