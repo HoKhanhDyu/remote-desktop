@@ -272,6 +272,9 @@ class MainWindow(QMainWindow):
 
         # Add rows to the table for each student
         for server in self.server_list:
+            if server['server'].server_socket is None:
+                self.server_list.remove(server)
+                continue
             row_position = table_widget.rowCount()
             table_widget.insertRow(row_position)
 
@@ -285,7 +288,7 @@ class MainWindow(QMainWindow):
             image_label.setAlignment(Qt.AlignCenter)
             #check none
             while server['server'].capture is None:
-                print('none')
+                # print('none')
                 sleep(1)
 
             # Chuyển đổi sang QPixmap và hiển thị trong QLabel
@@ -380,7 +383,7 @@ class MainWindow(QMainWindow):
             widget.layout().itemAt(i).widget().setParent(None)
 
     def cell_clicked(self, row, column):
-        print(f"Đây là ô ({row}, {column})")
+        # print(f"Đây là ô ({row}, {column})")
         server_screen = self.server_list[row]
         self.show_window(server_screen)
         
