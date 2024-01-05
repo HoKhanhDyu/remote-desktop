@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import os
 from PyQt5 import QtCore, QtGui, QtWidgets
 from UI.st import Ui_Form
 from UI.ip1 import Ui_Dialog
@@ -42,17 +43,27 @@ class Ui_MainWindow(object):
         self.checkBox.setObjectName("checkBox")
         self.checkBox.stateChanged.connect(self.switch_on)
         self.label = QtWidgets.QLabel(self.centralwidget)
-        self.label.setGeometry(QtCore.QRect(270, 75, 261, 191))
+        self.label.setGeometry(QtCore.QRect(270, 50, 261, 191))
         self.label.setObjectName("label")
         self.pushButton_2 = QtWidgets.QPushButton(self.centralwidget)
         self.pushButton_2.setGeometry(QtCore.QRect(510, 20, 31, 31))
         self.pushButton_2.setStyleSheet("")
         self.pushButton_2.setText("")
         self.pushButton_2.clicked.connect(self.openWindow2)
+        
         icon = QtGui.QIcon()
         icon.addPixmap(QtGui.QPixmap("./remote_desktop/server/UI/icon/001-filter.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.pushButton_2.setIcon(icon)
         self.pushButton_2.setObjectName("pushButton_2")
+        self.pushButton = QtWidgets.QPushButton(self.centralwidget)
+        self.pushButton.setGeometry(QtCore.QRect(470, 20, 31, 31))
+        self.pushButton.setStyleSheet("")
+        self.pushButton.setText("")
+        self.pushButton.clicked.connect(self.open_async)
+        icon1 = QtGui.QIcon()
+        icon1.addPixmap(QtGui.QPixmap("./remote_desktop/server/UI/icon/file.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.pushButton.setIcon(icon1)
+        self.pushButton.setObjectName("pushButton")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 582, 26))
@@ -84,7 +95,10 @@ class Ui_MainWindow(object):
         self.server.password = self.ui2.password
         self.server.send_screen = not self.ui2.share_screen
         self.server.event_handle = not self.ui2.control
-        self.server.have_pass = self.ui2.have_password        
+        self.server.have_pass = self.ui2.have_password    
+        
+    def open_async(self):
+        os.startfile('async')    
 
     def get_ip_port(self):
         self.window3 = QtWidgets.QDialog()
@@ -108,7 +122,8 @@ class Ui_MainWindow(object):
                 'password' : self.server.password if self.server.have_pass else 'Không có mật khẩu',
                 'send_screen' : self.server.send_screen,
                 'event_handle' : self.server.event_handle,
-                'Server' : 'Đang tắt' if not self.checkBox.isChecked() else 'Đang chờ kết nối' if not self.server.connected else 'Đang chạy'
+                'fps' : int(self.server.fps) if self.checkBox.isChecked() and self.server.connected else '0',
+                'Server' : 'Đang tắt' if not self.checkBox.isChecked() else 'Đang chờ kết nối' if not self.server.connected else f'Đang kết nối với {self.server.client_address}'
             }
             info_str = ""
             for key, value in info.items():

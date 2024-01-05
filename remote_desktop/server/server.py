@@ -20,45 +20,54 @@ class MyHandler(FileSystemEventHandler):
     def __init__(self,server) -> None:
         self.server = server
     def on_modified(self, event):
-        sleep(1)
-        if not event.is_directory and not self.server.sending_file:
-            file_path = event.src_path
-            with open(file_path, 'rb') as file:
-                data = file.read()
-                print(f"File đã thay đổi: {file_path}")
-                mes = {
-                    'type': 'file',
-                    'event': 'modified',
-                    'data': data,
-                    'path': file_path
-                }
-                self.server._send(mes)
+        try:
+            if not event.is_directory and not self.server.sending_file:
+                sleep(1)
+                file_path = event.src_path
+                with open(file_path, 'rb') as file:
+                    data = file.read()
+                    print(f"File đã thay đổi: {file_path}")
+                    mes = {
+                        'type': 'file',
+                        'event': 'modified',
+                        'data': data,
+                        'path': file_path
+                    }
+                    self.server._send(mes)
+        except:
+            pass
 
     def on_created(self, event):
-        if not event.is_directory and not self.server.sending_file:
-            sleep(1)
-            file_path = event.src_path
-            with open(file_path, 'rb') as file:
-                data = file.read()
-                print(f"{file_path} đã được tạo!")
-                mes = {
-                    'type': 'file',
-                    'event': 'created',
-                    'data': data,
-                    'path': file_path
-                }
-                self.server._send(mes)
+        try:
+            if not event.is_directory and not self.server.sending_file:
+                sleep(1)
+                file_path = event.src_path
+                with open(file_path, 'rb') as file:
+                    data = file.read()
+                    print(f"{file_path} đã được tạo!")
+                    mes = {
+                        'type': 'file',
+                        'event': 'created',
+                        'data': data,
+                        'path': file_path
+                    }
+                    self.server._send(mes)
+        except:
+            pass
 
     def on_deleted(self, event):
-        if not event.is_directory and not self.server.sending_file:
-            print(f"{event.src_path} đã bị xóa!")
-            sleep(1)
-            mes = {
-                'type': 'file',
-                'event': 'deleted',
-                'path': event.src_path
-            }
-            self.server._send(mes)
+        try:
+            if not event.is_directory and not self.server.sending_file:
+                sleep(1)
+                print(f"{event.src_path} đã bị xóa!")
+                mes = {
+                    'type': 'file',
+                    'event': 'deleted',
+                    'path': event.src_path
+                }
+                self.server._send(mes)
+        except:
+            pass
 
 
 class Server:
@@ -68,6 +77,9 @@ class Server:
         self.port = port
         self.server_socket.bind((self.host, self.port))
         self.server_socket.listen(5)
+        self.sksend_screen = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sksend_screen.bind((self.host, 8889))
+        self.sksend_screen.listen(5)
         self.server_socket.settimeout(5)
         self.client_socket, self.client_address = None, None
         self.connected = False
@@ -75,17 +87,18 @@ class Server:
         self.have_pass = False
         self.accept_pass = False
         self.password = password
-        self.fps = 60
+        self.fps = 0
         self.file_async = False
         self.sending_file = False
         self.screen_size = (screeninfo.get_monitors()[0].width, screeninfo.get_monitors()[0].height)
-        self.last_frame_time = None
+        self.last_frame_time = time()
         self.wait_connect = False
         self.event_handle = True
         self.send_screen = True
         self.turn_off_mouse = mouse.Listener(suppress=True)
         self.turn_off_keyboard = keyboard.Listener(suppress=True)
         self.path = "./async"
+        self.count = 0
     def connect(self):
         while True:
             if not self.connected and self.wait_connect:
@@ -99,6 +112,7 @@ class Server:
                     if not self.have_pass:
                         self.live = True
                         self.accept_pass = True
+                        self.start_sync()
                 except:
                     pass
             else:
@@ -113,14 +127,7 @@ class Server:
             message = pickle.dumps(mes)
             packet = struct.pack('Q', len(message)) + message
             self.client_socket.sendall(packet)
-            current_time = time()
-
-            if self.last_frame_time is not None:
-                time_diff = current_time - self.last_frame_time
-                fps = 1 / time_diff if time_diff > 0 else 0
-                # print(f"FPS: {fps}")
-
-            self.last_frame_time = current_time
+           
         except:
             self.disconnect()
             self.wait_connect=False
@@ -196,23 +203,52 @@ class Server:
     
             
     def stream_screen(self):
+        skclient_socket, client_address = None, None
         while True:
             if self.connected and self.live and self.send_screen:
-                image = self.capture_screen()
-                mes = {
-                    'type': 'screen',
-                    'image': image
-                }
-                self._send(mes)
+                # print('ok')
+                try:
+                    if skclient_socket is None:
+                        # print('ok2')
+                        skclient_socket, client_address = self.sksend_screen.accept()
+                    image = self.capture_screen()
+                    message = pickle.dumps(image)
+                    packet = struct.pack('Q', len(message)) + message
+                    skclient_socket.sendall(packet)
+                    self.count += 1
+                    current_time = time()
+                    
+                    if current_time - self.last_frame_time > 1:
+                        self.fps = self.count/(current_time - self.last_frame_time)
+                        self.count = 0
+                        self.last_frame_time = current_time
+                        # print(f"FPS: {self.fps}")
+                except:
+                    sleep(1)
+                    
             else:
+                try:
+                    if skclient_socket:
+                        skclient_socket.close()
+                except:
+                    pass
+                finally:
+                    skclient_socket = None
                 if not self.wait_connect:
                     return
                 sleep(1)
 
     def handle_keyboard(self, request):
         controller = keyboard.Controller()
+        try:
+            print(request['key'].char, request['event'])
+        except:
+            print(request['key'], request['event'])
         if request['event'] == 'press':
-            print(request['key'])
+            try:
+                print(request['key'].char, re)
+            except:
+                print(request['key'])
             controller.press(request['key'])
         else:
             controller.release(request['key'])
@@ -222,13 +258,17 @@ class Server:
         w,h = screeninfo.get_monitors()[0].width, screeninfo.get_monitors()[0].height
         if request['event'] == 'move':
             controller.position = (request['pos'][0] * w, request['pos'][1] * h)
+            pass
         elif request['event'] == 'press':
+            print(f'press {request["key"]} at {request["pos"]}')
             controller.position = (request['pos'][0] * w, request['pos'][1] * h)
             controller.press(request['key'])
         elif request['event'] == 'release':
+            print(f'release {request["key"]} at {request["pos"]}')
             controller.position = (request['pos'][0] * w, request['pos'][1] * h)
             controller.release(request['key'])
         elif request['event'] == 'scroll':
+            print(f'scroll {request["key"]} at {request["pos"]}')
             controller.position = (request['pos'][0] * w, request['pos'][1] * h)
             controller.scroll(dx=request['key'][0], dy=request['key'][1])
 
@@ -247,6 +287,7 @@ class Server:
                 'type': 'pass',
                 'status': True
             }
+            self.start_sync()
             self._send(mes)
         else:
             mes = {
@@ -273,21 +314,21 @@ class Server:
             self.live = False
             self.accept_pass = False
         finally:
+            self.stop_sync()
             if self.client_socket:
                 self.client_socket.close()
                 self.client_socket = None
 
     def async_file(self):
-        path = "./async"
-        if not os.path.exists(path):
-            os.makedirs(path)
-        for item in os.listdir(path):
-            item_path = os.path.join(path, item)
+        if not os.path.exists(self.path):
+            os.makedirs(self.path)
+        for item in os.listdir(self.path):
+            item_path = os.path.join(self.path, item)
             if os.path.isfile(item_path) or os.path.islink(item_path):
                 os.remove(item_path)
         event_handler = MyHandler(self)
         observer = Observer()
-        observer.schedule(event_handler, path, recursive=False)
+        observer.schedule(event_handler, self.path, recursive=False)
         observer.start()
 
         try:
@@ -313,11 +354,14 @@ class Server:
         self.sending_file = False
 
     def start_sync(self):
-        self.file_async = True
-        Thread(target=self.async_file).start()
+        self.file_async = Thread(target=self.async_file)
+        self.file_async.start()
 
     def stop_sync(self):
-        self.file_async = False
+        try:
+            self.file_async.stop()
+        except:
+            pass
 
     def run(self):
         Thread(target=self.connect).start()

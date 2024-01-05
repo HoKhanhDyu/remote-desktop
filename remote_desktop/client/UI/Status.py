@@ -1,6 +1,6 @@
 import os
 from PyQt5 import QtCore, QtGui, QtWidgets
-
+from time import time
 
 class UI_Status(object):
     
@@ -153,7 +153,7 @@ class UI_Status(object):
         # Create a timer to update the stopwatch every second
         self.timer = QtCore.QTimer(MainWindow)
         self.timer.timeout.connect(self.update_stopwatch)
-        self.seconds_elapsed = 0  # Variable to keep track of elapsed time
+        # self.seconds_elapsed = 0  # Variable to keep track of elapsed time
 
         # Start the timer
         self.timer.start(1000)  # Update every 1000 milliseconds (1 second)
@@ -163,10 +163,10 @@ class UI_Status(object):
     
     def update_stopwatch(self):
         # Update the elapsed time and display it in the stopwatch label
-        self.seconds_elapsed += 1
+        self.seconds_elapsed = time() - self.server.start_time
         minutes = self.seconds_elapsed // 60
         seconds = self.seconds_elapsed % 60
-        time_str = "{:02}:{:02}".format(minutes, seconds)
+        time_str = "{:02}:{:02}".format(int(minutes), int(seconds))
         self.stopwatch_label.setText(time_str)
 
     def retranslateUi(self, MainWindow):
@@ -228,8 +228,8 @@ class UI_Status(object):
         self.RecorderButton.setStyleSheet("background-color: white")
 
     def on_RecorderButton_clicked(self):
-        if self.recording: # Tuy thuoc vao True/False se lua chon Icon de thay cho button
-            new_icon = QtGui.QIcon("./remote_desktop/client/UI/icon/recorder.png")
+        if not self.recording: # Tuy thuoc vao True/False se lua chon Icon de thay cho button
+            new_icon = QtGui.QIcon("./remote_desktop/client/UI/icon/stop.png")
             self.server.start_record()
         else:
             new_icon = QtGui.QIcon("./remote_desktop/client/UI/icon/recorder.png")

@@ -73,7 +73,7 @@ class Ui_Form(object):
         self.have_password = self.checkBox_2.isChecked()
 
         if self.have_password:
-            self.password = self.textEdit.toPlainText()
+            self.password = self.textEdit.text()
         else:
             self.password = None
 

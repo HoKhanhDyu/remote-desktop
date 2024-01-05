@@ -14,53 +14,64 @@ import datetime
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
-sizefile = 100*1024
+sizefile = 10000*1024
 
 class MyHandler(FileSystemEventHandler):
     def __init__(self,server) -> None:
         self.server = server
     def on_modified(self, event):
-        if not event.is_directory and not self.server.sending_file:
-            sleep(1)
-            file_path = event.src_path
-            with open(file_path, 'rb') as file:
-                data = file.read()
-                print(f"File đã thay đổi: {file_path}")
-                mes = {
-                    'type': 'file',
-                    'event': 'modified',
-                    'data': data,
-                    'path': file_path
-                }
-                self.server._send(mes)
+        try:
+            if not event.is_directory and not self.server.sending_file:
+                sleep(1)
+                file_path = event.src_path
+                with open(file_path, 'rb') as file:
+                    data = file.read()
+                    print(f"File đã thay đổi: {file_path}")
+                    mes = {
+                        'type': 'file',
+                        'event': 'modified',
+                        'data': data,
+                        'path': file_path
+                    }
+                    self.server._send(mes)
+        except:
+            pass
 
     def on_created(self, event):
-        if not event.is_directory and not self.server.sending_file:
-            sleep(1)
-            file_path = event.src_path
-            with open(file_path, 'rb') as file:
-                data = file.read()
-                print(f"{file_path} đã được tạo!")
-                mes = {
-                    'type': 'file',
-                    'event': 'created',
-                    'data': data,
-                    'path': file_path
-                }
-                self.server._send(mes)
+        try:
+            if not event.is_directory and not self.server.sending_file:
+                sleep(1)
+                file_path = event.src_path
+                with open(file_path, 'rb') as file:
+                    data = file.read()
+                    print(f"{file_path} đã được tạo!")
+                    mes = {
+                        'type': 'file',
+                        'event': 'created',
+                        'data': data,
+                        'path': file_path
+                    }
+                    self.server._send(mes)
+        except:
+            pass
 
     def on_deleted(self, event):
-        if not event.is_directory and not self.server.sending_file:
-            sleep(1)
-            print(f"{event.src_path} đã bị xóa!")
-            mes = {
-                'type': 'file',
-                'event': 'deleted',
-                'path': event.src_path
-            }
-            self.server._send(mes)
+        try:
+            if not event.is_directory and not self.server.sending_file:
+                sleep(1)
+                print(f"{event.src_path} đã bị xóa!")
+                mes = {
+                    'type': 'file',
+                    'event': 'deleted',
+                    'path': event.src_path
+                }
+                self.server._send(mes)
+        except:
+            pass
 class Client:
     def __init__(self,host,port=8888) -> None:
+        self.host = host
+        self.port = port
         self.server_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
         self.have_pass = None
         try:
@@ -80,21 +91,27 @@ class Client:
         self.controling = False
         self.sending_file = False
         self.running = False
-        self.last_frame_time = None
+        self.last_frame_time = time()
         self.x, self.y, self.height, self.width = 0, 0, 0, 0
         self.lasttime = time()
         self.press = False
         self.listener_key = None
         self.listener_mouse = None
         self.path = './async'
+        self.start_time = time()
+        self.count = 0
 
-    def _send(self,mes):        
-        if not self.connected:
-            return
-        print(mes['type'])
-        message = pickle.dumps(mes)
-        packet = struct.pack('Q',len(message))+message
-        self.server_socket.sendall(packet)
+    def _send(self,mes): 
+        try:   
+            if not self.connected:
+                return
+            # print(mes['type'])
+            message = pickle.dumps(mes)
+            packet = struct.pack('Q',len(message))+message
+            self.server_socket.sendall(packet)
+        except:
+            self.connected = False
+            self.disconnect()
         
     def get_request(self):
         global sizefile
@@ -103,15 +120,19 @@ class Client:
         while not self.connected:
             sleep(1)
         while self.connected:
-            while len(data)<header:
-                data += self.server_socket.recv(sizefile)
-            image_size = struct.unpack('Q',data[:header])[0]
-            data = data[header:]
-            while len(data) < image_size:
-                data += self.server_socket.recv(sizefile)
-            request = data[:image_size]
-            data = data[image_size:]
-            self.handle(pickle.loads(request))
+            try:
+                while len(data)<header:
+                    data += self.server_socket.recv(sizefile)
+                image_size = struct.unpack('Q',data[:header])[0]
+                data = data[header:]
+                while len(data) < image_size:
+                    data += self.server_socket.recv(sizefile)
+                request = data[:image_size]
+                data = data[image_size:]
+                self.handle(pickle.loads(request))
+            except:
+                self.connected = False
+                self.disconnect()
             
     def change_size_screen(self,size):
         width = int(size.split(' ')[0])
@@ -123,8 +144,8 @@ class Client:
 
     def handle(self,request):
         # print(request)
-        if request['type']=='file':
-            print(request)
+        # if request['type']=='file':
+        #     print(request)
         if request['type']=='pass':
             self.handle_pass(request)
         elif request['type']=='screen':
@@ -137,7 +158,7 @@ class Client:
         #     pass
 
     def handle_pass(self,request):
-        print(request['status'])
+        # print(request['status'])
         self.accepted = request['status']
 
     def on_mouse(self):
@@ -181,17 +202,41 @@ class Client:
         # image = io.BytesIO(dimage)
         # self.capture = Image.open(image)
         self.capture = dimage
+    
+    def recive_screen(self):
+        global sizefile
+        header = struct.calcsize('Q')
+        data = b''
+        while not self.connected or not self.accepted:
+            sleep(1)
+        skserver_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+        skserver_socket.connect((self.host, 8889))
+        while self.connected:
+            try:
+                while len(data)<header:
+                    data += skserver_socket.recv(sizefile)
+                image_size = struct.unpack('Q',data[:header])[0]
+                data = data[header:]
+                while len(data) < image_size:
+                    data += skserver_socket.recv(sizefile)
+                request = data[:image_size]
+                data = data[image_size:]
+                self.stream_screen(pickle.loads(request))
+            except:
+                self.connected = False
+                self.disconnect()
         
-    def stream_screen(self,request):
-        self.update_capture(request['image'])
+    
+    def stream_screen(self,image):
+        self.update_capture(image)
+        self.count += 1
         current_time = time()
 
-        if self.last_frame_time is not None:
-            time_diff = current_time - self.last_frame_time
-            self.fps = 1 / time_diff if time_diff > 0 else 0
+        if current_time - self.start_time >= 1:
+            self.fps = self.count/(current_time - self.last_frame_time)
+            self.count = 0
+            self.last_frame_time = current_time
             # print(f"FPS: {fps}")
-
-        self.last_frame_time = current_time
     
     def on_press(self,key):
         mes = {
@@ -199,7 +244,10 @@ class Client:
             'event' : 'press',
             'key' : key
         }
-        
+        try:
+            print(f'{key.char} press')
+        except:
+            print(f'{key} press')
         self._send(mes)
 
     def on_release(self,key):
@@ -208,13 +256,17 @@ class Client:
             'event' : 'release',
             'key' : key
         }
+        try:
+            print(f'{key.char} release')
+        except:
+            print(f'{key} release')
         self._send(mes)
         
     def on_move(self,x, y):
         if x<self.x or x>self.x+self.width or y<self.y or y>self.y+self.height:
             return
         current_time = time()
-        if current_time - self.lasttime > 0.1 or self.press:
+        if current_time - self.lasttime > 0.08:
             # Gửi cập nhật
             self.lasttime = current_time
             x=(x-self.x)/self.width
@@ -232,6 +284,7 @@ class Client:
             return
         x=(x-self.x)/self.width
         y=(y-self.y)/self.height
+        print(f'{button} click at {x} {y} of screen')
         mes = {
             'type' : 'mouse',
             'key' : button,
@@ -250,6 +303,7 @@ class Client:
             return
         x=(x-self.x)/self.width
         y=(y-self.y)/self.height
+        print(f'scroll {dx},{dy} at {x} {y} of screen')
         mes = {
             'type' : 'mouse',
             'event' : 'scroll',
@@ -328,11 +382,22 @@ class Client:
         print('disconnect') 
         mes={'type':'disconnect'}
         self._send(mes)
-        
+        if not self.connected:
+            try:
+                self.server_socket.close()
+            except:
+                pass
+            finally:
+                self.server_socket = None
     def handle_disconnect(self):
         self.connected = False
         sleep(3)
-        self.server_socket.close()
+        try:
+            self.server_socket.close()
+        except:
+            pass
+        finally:
+            self.server_socket = None
 
     def async_file(self):
         if not os.path.exists(self.path):
@@ -365,7 +430,7 @@ class Client:
                 file.write(mes['data'])
         elif mes['event']=='deleted':
             os.remove(mes['path'])
-        sleep(5)
+        sleep(3)
         self.sending_file = False
             
     def start_sync(self):
@@ -379,6 +444,7 @@ class Client:
     def run_screen(self):
         self.running = True
         Thread(target=self.get_request).start()
+        Thread(target=self.recive_screen).start()
     
     def run_listener(self):
         Thread(target=self.keyboard_listener).start()
@@ -390,12 +456,7 @@ class Client:
             self.listener_key.stop()
         if self.listener_mouse is not None:
             self.listener_mouse.stop()
-        
-        
-                            
-
-            
-            
+  
 # client = Client('127.0.0.1', 8888)
 # client.run_screen()
 # client.start_sync()
