@@ -244,10 +244,10 @@ class Server:
 
     def handle_keyboard(self, request):
         controller = keyboard.Controller()
-        # try:
-        #     print(request['key'].char, request['event'])
-        # except:
-        #     print(request['key'], request['event'])
+        try:
+            print(request['key'].char, request['event'])
+        except:
+            print(request['key'], request['event'])
         if request['event'] == 'press':
             try:
                 controller.press(request['key'])

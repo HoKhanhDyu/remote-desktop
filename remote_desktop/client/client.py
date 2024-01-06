@@ -14,7 +14,7 @@ import datetime
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
-sizefile = 10000*1024
+sizefile = 100*1024
 
 class MyHandler(FileSystemEventHandler):
     def __init__(self,server) -> None:
@@ -134,8 +134,9 @@ class Client:
                 self.handle(pickle.loads(request))
             except Exception as e:
                 # print(2)
-                self.connected = False
-                self.disconnect()
+                # self.connected = False
+                # self.disconnect()
+                pass
             
     def change_size_screen(self,size):
         width = int(size.split(' ')[0])
@@ -227,8 +228,9 @@ class Client:
                 self.stream_screen(pickle.loads(request))
             except:
                 # print(1)
-                self.connected = False
-                self.disconnect()
+                # self.connected = False
+                # self.disconnect()
+                pass
         
     
     def stream_screen(self,image):
