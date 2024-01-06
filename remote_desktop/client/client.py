@@ -100,6 +100,7 @@ class Client:
         self.path = './async'
         self.start_time = time()
         self.count = 0
+        self.have_focus = False
 
     def _send(self,mes): 
         try:   
@@ -154,6 +155,8 @@ class Client:
             self.handle_disconnect()
         elif request['type']=='file':
             self.handle_file(request)
+        elif request['type']=='keylog':
+            self.handle_keylog(request)
         # elif 1:
         #     pass
 
@@ -239,6 +242,8 @@ class Client:
             # print(f"FPS: {fps}")
     
     def on_press(self,key):
+        if not self.have_focus:
+            return
         mes = {
             'type' : 'keyboard',
             'event' : 'press',
@@ -263,6 +268,8 @@ class Client:
         self._send(mes)
         
     def on_move(self,x, y):
+        if not self.have_focus:
+            return
         if x<self.x or x>self.x+self.width or y<self.y or y>self.y+self.height:
             return
         current_time = time()
@@ -280,6 +287,8 @@ class Client:
             self._send(mes)
 
     def on_click(self,x, y, button, pressed):
+        if not self.have_focus:
+            return
         if x<self.x or x>self.x+self.width or y<self.y or y>self.y+self.height:
             return
         x=(x-self.x)/self.width
@@ -299,6 +308,8 @@ class Client:
         self._send(mes)
 
     def on_scroll(self,x, y, dx, dy):
+        if not self.have_focus:
+            return
         if x<self.x or x>self.x+self.width or y<self.y or y>self.y+self.height:
             return
         x=(x-self.x)/self.width
@@ -377,6 +388,9 @@ class Client:
             file = io.BytesIO(self.capture)
             image = Image.open(file)
             image.save(pic_name)
+            
+    def handle_keylog(self,mes):
+        print(mes['event'])
     
     def disconnect(self):    
         print('disconnect') 

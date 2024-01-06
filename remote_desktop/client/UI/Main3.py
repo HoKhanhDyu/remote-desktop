@@ -136,7 +136,15 @@ class ImageWindow(QMainWindow):
         self.timer2.timeout.connect(self.update_x_y)
         self.timer2.start(5000)
         
-        
+    
+    def focusInEvent(self, event):
+        self.server.have_focus=True
+        super().focusInEvent(event)
+
+    def focusOutEvent(self, event):
+        self.server.have_focus=False
+        super().focusOutEvent(event)
+    
     def load_image(self):
         # print('load image')
         if self.server.capture is None:
