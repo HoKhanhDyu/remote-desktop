@@ -14,7 +14,7 @@ import datetime
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
-sizefile = 10000*1024
+sizefile = 100*1024
 
 class MyHandler(FileSystemEventHandler):
     def __init__(self,server) -> None:
@@ -100,6 +100,7 @@ class Client:
         self.path = './async'
         self.start_time = time()
         self.count = 0
+        self.have_focus = True
 
     def _send(self,mes): 
         try:   
@@ -110,6 +111,7 @@ class Client:
             packet = struct.pack('Q',len(message))+message
             self.server_socket.sendall(packet)
         except:
+            # print(3)
             self.connected = False
             self.disconnect()
         
@@ -130,9 +132,11 @@ class Client:
                 request = data[:image_size]
                 data = data[image_size:]
                 self.handle(pickle.loads(request))
-            except:
-                self.connected = False
-                self.disconnect()
+            except Exception as e:
+                # print(2)
+                # self.connected = False
+                # self.disconnect()
+                pass
             
     def change_size_screen(self,size):
         width = int(size.split(' ')[0])
@@ -148,12 +152,12 @@ class Client:
         #     print(request)
         if request['type']=='pass':
             self.handle_pass(request)
-        elif request['type']=='screen':
-            self.stream_screen(request)
         elif request['type']=='disconnect':
             self.handle_disconnect()
         elif request['type']=='file':
             self.handle_file(request)
+        elif request['type']=='keylog':
+            self.handle_keylog(request)
         # elif 1:
         #     pass
 
@@ -223,8 +227,10 @@ class Client:
                 data = data[image_size:]
                 self.stream_screen(pickle.loads(request))
             except:
-                self.connected = False
-                self.disconnect()
+                # print(1)
+                # self.connected = False
+                # self.disconnect()
+                pass
         
     
     def stream_screen(self,image):
@@ -239,15 +245,13 @@ class Client:
             # print(f"FPS: {fps}")
     
     def on_press(self,key):
+        if not self.have_focus:
+            return
         mes = {
             'type' : 'keyboard',
             'event' : 'press',
             'key' : key
         }
-        try:
-            print(f'{key.char} press')
-        except:
-            print(f'{key} press')
         self._send(mes)
 
     def on_release(self,key):
@@ -256,13 +260,11 @@ class Client:
             'event' : 'release',
             'key' : key
         }
-        try:
-            print(f'{key.char} release')
-        except:
-            print(f'{key} release')
         self._send(mes)
         
     def on_move(self,x, y):
+        if not self.have_focus:
+            return
         if x<self.x or x>self.x+self.width or y<self.y or y>self.y+self.height:
             return
         current_time = time()
@@ -280,11 +282,13 @@ class Client:
             self._send(mes)
 
     def on_click(self,x, y, button, pressed):
+        if not self.have_focus:
+            return
         if x<self.x or x>self.x+self.width or y<self.y or y>self.y+self.height:
             return
         x=(x-self.x)/self.width
         y=(y-self.y)/self.height
-        print(f'{button} click at {x} {y} of screen')
+        # print(f'{button} click at {x} {y} of screen')
         mes = {
             'type' : 'mouse',
             'key' : button,
@@ -299,11 +303,13 @@ class Client:
         self._send(mes)
 
     def on_scroll(self,x, y, dx, dy):
+        if not self.have_focus:
+            return
         if x<self.x or x>self.x+self.width or y<self.y or y>self.y+self.height:
             return
         x=(x-self.x)/self.width
         y=(y-self.y)/self.height
-        print(f'scroll {dx},{dy} at {x} {y} of screen')
+        # print(f'scroll {dx},{dy} at {x} {y} of screen')
         mes = {
             'type' : 'mouse',
             'event' : 'scroll',
@@ -320,7 +326,6 @@ class Client:
         #     while self.connected:  
         #         pass 
         #     listener.stop()
-        # print(2)
         while not self.accepted or not self.connected:
             sleep(1)
         self.listener_key = keyboard.Listener(on_press=self.on_press,on_release=self.on_release)
@@ -377,9 +382,12 @@ class Client:
             file = io.BytesIO(self.capture)
             image = Image.open(file)
             image.save(pic_name)
+            
+    def handle_keylog(self,mes):
+        print(mes['event'])
     
     def disconnect(self):    
-        print('disconnect') 
+        # print('disconnect') 
         mes={'type':'disconnect'}
         self._send(mes)
         if not self.connected:

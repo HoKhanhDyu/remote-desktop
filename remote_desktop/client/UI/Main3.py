@@ -136,7 +136,19 @@ class ImageWindow(QMainWindow):
         self.timer2.timeout.connect(self.update_x_y)
         self.timer2.start(5000)
         
+        self.timer3 = QTimer(self)
+        self.timer3.timeout.connect(self.isactive)
+        self.timer3.start(1000)
         
+    
+    def isactive(self):
+        if self.isActiveWindow():
+            # print('active')
+            self.server.have_focus=True
+        else:
+            # print('not active')
+            self.server.have_focus=False
+    
     def load_image(self):
         # print('load image')
         if self.server.capture is None:
@@ -364,7 +376,7 @@ class MainWindow(QMainWindow):
                 # "image": dialog.image_edit.text()
                 'server':dialog.server
             }
-            print(new_server)
+            # print(new_server)
             if new_server['server'] is None:
                 return
             # new_server['server'].run_screen()
