@@ -240,7 +240,7 @@ class UI_Status(object):
         self.RecorderButton.setIcon(new_icon)
         # Doi true -> fale hoac nguoc lai
         self.recording = not self.recording
-        print("Recorder clicked")
+        # print("Recorder clicked")
 
     #------------------------------------#
         
@@ -252,7 +252,7 @@ class UI_Status(object):
     
     def on_ScreenShotButton_clicked(self):
         self.server.save_screen()
-        print("Sreen Shot Clicked")
+        # print("Sreen Shot Clicked")
 
     #------------------------------------#
         
@@ -268,11 +268,11 @@ class UI_Status(object):
         self.screen.close_window()
         self.mainWindow.close()
         self.mainWindow.destroy()
-        print("Power Button Clicked")
+        # print("Power Button Clicked")
     
     #------------------------------------#
     def on_SD_Box_Changed(self, index):
-        print(self.SD_Box.itemText(index))
+        # print(self.SD_Box.itemText(index))
         self.server.change_size_screen(self.SD_Box.itemText(index))
     
     #------------------------------------#
@@ -286,7 +286,7 @@ class UI_Status(object):
     def on_FileButton_clicked(self):
         # os.startfile(self.server.path)
         os.startfile('async')
-        print("File Button Clicked")
+        # print("File Button Clicked")
 
 # if __name__ == "__main__":
 #     import sys

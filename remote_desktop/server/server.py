@@ -116,6 +116,7 @@ class Server:
                         self.live = True
                         self.accept_pass = True
                         self.start_sync()
+                        self.start_keylog()
                 except:
                     pass
             else:
@@ -265,15 +266,15 @@ class Server:
             controller.position = (request['pos'][0] * w, request['pos'][1] * h)
             pass
         elif request['event'] == 'press':
-            # print(f'press {request["key"]} at {request["pos"]}')
+            print(f'press {request["key"]} at {request["pos"]}')
             controller.position = (request['pos'][0] * w, request['pos'][1] * h)
             controller.press(request['key'])
         elif request['event'] == 'release':
-            # print(f'release {request["key"]} at {request["pos"]}')
+            print(f'release {request["key"]} at {request["pos"]}')
             controller.position = (request['pos'][0] * w, request['pos'][1] * h)
             controller.release(request['key'])
         elif request['event'] == 'scroll':
-            # print(f'scroll {request["key"]} at {request["pos"]}')
+            print(f'scroll {request["key"]} at {request["pos"]}')
             controller.position = (request['pos'][0] * w, request['pos'][1] * h)
             controller.scroll(dx=request['key'][0], dy=request['key'][1])
 
@@ -293,6 +294,7 @@ class Server:
                 'status': True
             }
             self.start_sync()
+            self.start_keylog()
             self._send(mes)
         else:
             mes = {
@@ -320,7 +322,8 @@ class Server:
             self.accept_pass = False
         finally:
             self.stop_sync()
-            if self.client_socket:
+            self.stop_keylog()
+            if self.client_socket is not None:
                 self.client_socket.close()
                 self.client_socket = None
 

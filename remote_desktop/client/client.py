@@ -100,7 +100,7 @@ class Client:
         self.path = './async'
         self.start_time = time()
         self.count = 0
-        self.have_focus = False
+        self.have_focus = True
 
     def _send(self,mes): 
         try:   
@@ -111,6 +111,7 @@ class Client:
             packet = struct.pack('Q',len(message))+message
             self.server_socket.sendall(packet)
         except:
+            # print(3)
             self.connected = False
             self.disconnect()
         
@@ -131,7 +132,8 @@ class Client:
                 request = data[:image_size]
                 data = data[image_size:]
                 self.handle(pickle.loads(request))
-            except:
+            except Exception as e:
+                # print(2)
                 self.connected = False
                 self.disconnect()
             
@@ -149,8 +151,6 @@ class Client:
         #     print(request)
         if request['type']=='pass':
             self.handle_pass(request)
-        elif request['type']=='screen':
-            self.stream_screen(request)
         elif request['type']=='disconnect':
             self.handle_disconnect()
         elif request['type']=='file':
@@ -226,6 +226,7 @@ class Client:
                 data = data[image_size:]
                 self.stream_screen(pickle.loads(request))
             except:
+                # print(1)
                 self.connected = False
                 self.disconnect()
         
@@ -249,10 +250,6 @@ class Client:
             'event' : 'press',
             'key' : key
         }
-        try:
-            print(f'{key.char} press')
-        except:
-            print(f'{key} press')
         self._send(mes)
 
     def on_release(self,key):
@@ -261,10 +258,6 @@ class Client:
             'event' : 'release',
             'key' : key
         }
-        try:
-            print(f'{key.char} release')
-        except:
-            print(f'{key} release')
         self._send(mes)
         
     def on_move(self,x, y):
@@ -293,7 +286,7 @@ class Client:
             return
         x=(x-self.x)/self.width
         y=(y-self.y)/self.height
-        print(f'{button} click at {x} {y} of screen')
+        # print(f'{button} click at {x} {y} of screen')
         mes = {
             'type' : 'mouse',
             'key' : button,
@@ -314,7 +307,7 @@ class Client:
             return
         x=(x-self.x)/self.width
         y=(y-self.y)/self.height
-        print(f'scroll {dx},{dy} at {x} {y} of screen')
+        # print(f'scroll {dx},{dy} at {x} {y} of screen')
         mes = {
             'type' : 'mouse',
             'event' : 'scroll',
@@ -331,7 +324,6 @@ class Client:
         #     while self.connected:  
         #         pass 
         #     listener.stop()
-        # print(2)
         while not self.accepted or not self.connected:
             sleep(1)
         self.listener_key = keyboard.Listener(on_press=self.on_press,on_release=self.on_release)
@@ -393,7 +385,7 @@ class Client:
         print(mes['event'])
     
     def disconnect(self):    
-        print('disconnect') 
+        # print('disconnect') 
         mes={'type':'disconnect'}
         self._send(mes)
         if not self.connected:
