@@ -13,6 +13,7 @@ import os
 import datetime
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
+import screeninfo
 
 sizefile = 100*1024
 
@@ -84,7 +85,10 @@ class Client:
             self.connected = False
             return None
         self.accepted = not self.have_pass
-        self.capture = None
+        temp = Image.new('RGB', (screeninfo.get_monitors()[0].width, screeninfo.get_monitors()[0].height),'black')
+        ioo = io.BytesIO()
+        temp.save(ioo, format='JPEG')
+        self.capture = ioo.getvalue()
         self.recording = False
         self.file_async = False 
         self.fps = 30

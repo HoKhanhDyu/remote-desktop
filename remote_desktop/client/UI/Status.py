@@ -13,6 +13,7 @@ class UI_Status(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(602, 105)
+        MainWindow.setWindowIcon(QtGui.QIcon('./remote_desktop/client/UI/icon/menu.png'))
         self.mainWindow = MainWindow
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
@@ -171,7 +172,7 @@ class UI_Status(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "Controller"))
         self.SD_Box.setItemText(0, _translate("MainWindow", "1920 x 1080"))
         self.SD_Box.setItemText(1, _translate("MainWindow", "1440 x 900"))
         self.SD_Box.setItemText(2, _translate("MainWindow", "1360 x 768"))
@@ -252,7 +253,13 @@ class UI_Status(object):
     
     def on_ScreenShotButton_clicked(self):
         self.server.save_screen()
-        # print("Sreen Shot Clicked")
+        
+        msg = QtWidgets.QMessageBox()
+        msg.setIcon(QtWidgets.QMessageBox.Information)
+        msg.setWindowTitle("Thông Báo")
+        msg.setText("Ảnh chụp màn hình đã được lưu.")
+        msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
+        msg.exec_()
 
     #------------------------------------#
         
@@ -262,14 +269,13 @@ class UI_Status(object):
     def on_PowerButton_leave(self, event):
         self.powerButton.setStyleSheet("background-color: white")
 
-    def on_PowerButton_clicked(self):
+    def on_PowerButton_clicked(self,event=None):
         self.server.stop_run()
         self.server.stop_sync()
         self.screen.close_window()
         self.mainWindow.close()
         self.mainWindow.destroy()
-        # print("Power Button Clicked")
-    
+
     #------------------------------------#
     def on_SD_Box_Changed(self, index):
         # print(self.SD_Box.itemText(index))
