@@ -5,7 +5,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 from UI.st import Ui_Form
 from UI.ip1 import Ui_Dialog
 from server import Server
-from time import sleep
+from time import sleep, time
 
 class Ui_MainWindow(object):
     def __init__(self):
@@ -13,10 +13,12 @@ class Ui_MainWindow(object):
         self.ip, self.port = None, None
         self.ui2 = Ui_Form()
         self.ui3 = Ui_Dialog()
+        # self.setWindowIcon(QtGui.QIcon('./remote_desktop/server/UI/icon/icon_app.png'))
     
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.setFixedSize(582, 320)
+        MainWindow.setWindowIcon(QtGui.QIcon('./remote_desktop/server/UI/icon/icon_app.png'))
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.checkBox = QtWidgets.QCheckBox(self.centralwidget)
@@ -86,7 +88,7 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "Remote Desktop(host)"))
     
     def openWindow2(self):
         self.window2 = QtWidgets.QDialog()
@@ -117,15 +119,16 @@ class Ui_MainWindow(object):
     def update_info(self):
         if self.server is not None:
             info = {
-                'ip' : self.server.host,
-                'port' : self.server.port,
-                'password' : self.server.password if self.server.have_pass else 'Không có mật khẩu',
-                'send_screen' : self.server.send_screen,
-                'event_handle' : self.server.event_handle,
-                'fps' : int(self.server.fps) if self.checkBox.isChecked() and self.server.connected else '0',
-                'Server' : 'Đang tắt' if not self.checkBox.isChecked() else 'Đang chờ kết nối' if not self.server.connected else f'Đang kết nối với {self.server.client_address}'
+                'IP' : self.server.host,
+                'Password' : self.server.password if self.server.have_pass else 'Không có mật khẩu',
+                'Xem màn hình' : 'Bật' if self.server.send_screen else 'Tắt',
+                'Cho phép điều khiển' : 'Bật' if self.server.event_handle else 'Tắt',
+                'FPS' : int(self.server.fps) if self.checkBox.isChecked() and self.server.connected else '0',
+                'Trạng thái' : 'Đang tắt' if not self.checkBox.isChecked() else 'Đang chờ kết nối' if not self.server.connected else f'Đang kết nối với {self.server.client_address[0]}',
+                'Thời gian kết nối' : '{:02}:{:02}'.format(int((time() - self.server.start_time) // 60), int((time() - self.server.start_time) % 60)) if self.server.connected else None,    
             }
             info_str = ""
             for key, value in info.items():
-                info_str += f"{key}: {value}\n"
+                if value is not None:
+                    info_str += f"{key}: {value}\n"
             self.label.setText(info_str)

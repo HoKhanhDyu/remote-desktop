@@ -15,7 +15,7 @@ class Ui_Form(object):
         Form.setObjectName("Form")
         Form.setFixedSize(306, 155)
         Form.setMouseTracking(False)
-
+        Form.setWindowIcon(QtGui.QIcon('./remote_desktop/server/UI/icon/001-filter.png'))
         self.checkBox_4 = QtWidgets.QCheckBox(Form)
         self.checkBox_4.setGeometry(QtCore.QRect(20, 10, 221, 20))
         self.checkBox_4.setObjectName("checkBox_4")
@@ -55,7 +55,7 @@ class Ui_Form(object):
 
     def retranslateUi(self, Form):
         _translate = QtCore.QCoreApplication.translate
-        Form.setWindowTitle(_translate("Form", "Form"))
+        Form.setWindowTitle(_translate("Form", "Option"))
         self.checkBox_4.setText(_translate("Form", "Tắt màn hình chia sẻ"))
         self.checkBox_3.setText(_translate("Form", "Tắt điều khiển chuột và bàn phím"))
         self.checkBox_2.setText(_translate("Form", "Mật khẩu"))

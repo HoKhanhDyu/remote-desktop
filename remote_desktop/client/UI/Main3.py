@@ -17,6 +17,7 @@ from PyQt5.QtCore import QTimer
 from PyQt5.QtCore import Qt
 import time
 from PIL import Image
+from PyQt5 import QtGui
 
 
 class input_password(QDialog):
@@ -29,7 +30,7 @@ class input_password(QDialog):
         self.password_label = QLabel("Password:")
         self.password_edit = QLineEdit(self)
 
-        self.add_button = QPushButton("Add", self)
+        self.add_button = QPushButton("Check", self)
         self.add_button.clicked.connect(self.ok)
 
         layout.addWidget(self.password_label)
@@ -50,7 +51,7 @@ class Add_Server_Dialog(QDialog):
         self.resize(320,100)
         layout = QVBoxLayout(self)
 
-        self.ip_label = QLabel("IP:")
+        self.ip_label = QLabel("Nhập IP của server:")
         self.ip_edit = QLineEdit(self)
 
         self.add_button = QPushButton("Add", self)
@@ -92,6 +93,7 @@ class Add_Server_Dialog(QDialog):
 
 
 class ImageWindow(QMainWindow):
+    closeSignal = QtCore.pyqtSignal()
     def __init__(self, server):
         super().__init__()
         self.server = server
@@ -103,13 +105,17 @@ class ImageWindow(QMainWindow):
         self.server.width,self.server.height=self.w,self.h
         self.last_frame_time = None
         
+    def closeEvent(self, event):
+        self.closeSignal.emit()
+        
     #setup ui
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         pic = io.BytesIO(self.server.capture)
         pic = Image.open(pic)
         MainWindow.resize(pic.size[0]//2, pic.size[1]//2)
-        MainWindow.setWindowTitle("Image")
+        MainWindow.setWindowTitle("Screen")
+        MainWindow.setWindowIcon(QtGui.QIcon('./remote_desktop/client/UI/icon/screen.png'))
         self.image_label = QLabel(MainWindow)
         # self.image_label.setScaledContents(True)
         self.image_label.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
@@ -213,8 +219,11 @@ class ImageWindow(QMainWindow):
             return label_global_pos.x(), label_global_pos.y(), 0, 0
         
     def close_window(self):
-        self.close()
-        self.deleteLater()
+        try:
+            self.close()
+            self.deleteLater()
+        except:
+            pass
         
 
 
@@ -223,10 +232,12 @@ class MainWindow(QMainWindow):
         super(MainWindow, self).__init__()
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
-        self.setWindowTitle("MainPage")
+        self.setWindowTitle("Remote Desktop")
         self.status_window = None
+        self.ui_image = None
         # Initialize an empty server list
         self.server_list = []
+        self.setWindowIcon(QtGui.QIcon('./remote_desktop/client/UI/icon/app.png'))
 
         # Populate the scroll area with server information
         # self.timer = QTimer()
@@ -401,20 +412,36 @@ class MainWindow(QMainWindow):
         
     def show_window(self, server):
         # self.image_window = QtWidgets.QMainWindow()
+        if self.ui_image is not None:
+            try:
+                self.ui_image.close()
+                self.ui_image.destroy()
+            except:
+                pass
+            self.ui_image = None
         self.ui_image = ImageWindow(server['server'])
         server['server'].run_listener()
         server['server'].start_sync()
         # ui_image.setupUi(self.image_window)
         # self.image_window.show()
         self.ui_image.show()
-        if not self.status_window or not self.status_window.isVisible():  
+        if self.status_window is not None:
+            try:
+                self.status_window.close()
+                self.status_window.destroy()
+            except:
+                pass
+            self.status_window = None
+        if self.status_window is None or not self.status_window.isVisible():  
+            # print('show status')
             self.status_window = QtWidgets.QMainWindow()
-            ui_status = UI_Status(self.status_window,server['server'],self.ui_image)
-            ui_status.setupUi(self.status_window)
+            self.ui_status = UI_Status(self.status_window,server['server'],self.ui_image)
+            self.ui_status.setupUi(self.status_window)
             self.status_window.show()
+            self.ui_image.closeSignal.connect(self.ui_status.on_PowerButton_clicked)
             # Connect the destroyed signal to set status_window to None
-            self.status_window.destroyed.connect(lambda: setattr(self, 'status_window', None))
-    
+            self.status_window.closeEvent = self.ui_status.on_PowerButton_clicked
+
     # def show_status_window(self):
     #     if not self.status_window:  # Check if the status window is not already open
     #         self.status_window = QtWidgets.QMainWindow()
