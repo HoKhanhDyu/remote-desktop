@@ -6,7 +6,7 @@ from UI.st import Ui_Form
 from UI.ip1 import Ui_Dialog
 from server import Server
 from time import sleep, time
-
+from UI.file import FileManagerApp
 class Ui_MainWindow(object):
     def __init__(self):
         self.server = None
@@ -100,7 +100,8 @@ class Ui_MainWindow(object):
         self.server.have_pass = self.ui2.have_password    
         
     def open_async(self):
-        os.startfile('async')    
+        self.file_manager = FileManagerApp()
+        self.file_manager.show()
 
     def get_ip_port(self):
         self.window3 = QtWidgets.QDialog()
