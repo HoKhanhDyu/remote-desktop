@@ -1,7 +1,8 @@
-Pillow
-pynput
-numpy
-opencv-python
-PyQt5
-screeninfo
-watchdog
+Pillow # for image processing
+pynput # for keyboard and mouse input
+numpy # for image processing
+opencv-python # for image processing
+PyQt5 # for GUI
+screeninfo # for getting screen resolution
+watchdog # for watching file changes
+```
