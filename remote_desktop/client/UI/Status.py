@@ -1,7 +1,7 @@
 import os
 from PyQt5 import QtCore, QtGui, QtWidgets
 from time import time
-from UI.file import FileManagerApp
+from UI.file2 import FileManagerApp2
 
 class UI_Status(object):
     
@@ -292,7 +292,7 @@ class UI_Status(object):
 
     def on_FileButton_clicked(self):
         # os.startfile(self.server.path)
-        self.file_manager = FileManagerApp()
+        self.file_manager = FileManagerApp2(self.server)
         self.file_manager.show()
         # print("File Button Clicked")
 

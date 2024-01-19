@@ -6,19 +6,27 @@ from PyQt5.QtWidgets import QMenu
 import os
 import shutil
 from PyQt5.QtGui import QIcon
+from PyQt5.QtWidgets import QListWidgetItem
+from PyQt5.QtCore import QTimer
+from PyQt5.QtGui import QStandardItemModel
+from PyQt5.QtGui import QStandardItem
+from time import sleep,time
 
 class FileManagerApp(QMainWindow):
-    def __init__(self):
+    def __init__(self, socket=None):
         super(FileManagerApp, self).__init__()
 
         self.setWindowTitle("File Manager")
         self.setGeometry(100, 100, 800, 600)
+        self.server = socket
+        self.now_path = ''
+        self.now_file = None
 
         self.init_ui()
 
     def init_ui(self):
-        
         self.setWindowIcon(QIcon('remote_desktop/server/UI/icon/file.png'))
+        
         self.model = QFileSystemModel()
         self.model.setRootPath('')
         
@@ -39,13 +47,24 @@ class FileManagerApp(QMainWindow):
         self.button.setFixedHeight(25)
         self.button.clicked.connect(self.back_folder)
         self.button.setIcon(QIcon('remote_desktop/server/UI/icon/002-arrow.png'))
+        
+        self.button3 = QPushButton("")
+        self.button3.setFixedWidth(25)
+        self.button3.setFixedHeight(25)
+        self.button3.clicked.connect(self.back_folder2)
+        self.button3.setIcon(QIcon('remote_desktop/server/UI/icon/002-arrow.png'))
+        
+        
+        self.button4 = QPushButton("")
+        self.button4.setFixedWidth(25)
+        self.button4.setFixedHeight(25)
+        self.button4.clicked.connect(self.home_folder2)
+        self.button4.setIcon(QIcon('remote_desktop/server/UI/icon/001-home.png'))
 
         self.model = QFileSystemModel()
         self.model.setRootPath('')
         
         self.right_list_view = QListView()
-        self.right_list_view.setModel(self.model)
-        self.right_list_view.setRootIndex(self.model.index('async'))
         
         self.left_list_view.doubleClicked.connect(self.double_click_event_left)
         self.right_list_view.doubleClicked.connect(self.double_click_event_right)
@@ -64,8 +83,17 @@ class FileManagerApp(QMainWindow):
         button_layout.addWidget(self.button2)
         button_layout.addWidget(self.button)
         
+        button_layout2 = QHBoxLayout()
+        button_layout2.setAlignment(Qt.AlignRight)
+        button_layout2.addWidget(self.button4)
+        button_layout2.addWidget(self.button3)
+        
+        splitter2 = QHBoxLayout()
+        splitter2.addLayout(button_layout)
+        splitter2.addLayout(button_layout2)
+        
         layout = QVBoxLayout()
-        layout.addLayout(button_layout)
+        layout.addLayout(splitter2)
         layout.addWidget(splitter)
 
         central_widget = QWidget()
@@ -73,24 +101,69 @@ class FileManagerApp(QMainWindow):
 
         self.setCentralWidget(central_widget)
         
+        self.load_right()
+        
+    def load_right(self):
+        self.server.query_file(self.now_path)
+        
+        current_time = time()
+        
+        while self.server.list_file == self.now_file and time() - current_time < 2:
+            sleep(0.3)
+        
+        self.now_file = self.server.list_file   
+        
+        model = QStandardItemModel(self.right_list_view)
+
+        
+        for file in self.server.list_file:  
+            # print(file)
+            item = QStandardItem(file['name'])
+            if file['type'] == 'folder':
+                item.setIcon(QIcon('remote_desktop/client/UI/icon/folder_icon.png'))
+            else:
+                item.setIcon(QIcon('remote_desktop/client/UI/icon/file_icon.png'))
+            model.appendRow(item)
+        self.right_list_view.setModel(model)
+            
+        
     def home_folder(self):
         self.left_list_view.setRootIndex(self.model.index(''))
         
     def back_folder(self):
         now_index = self.left_list_view.rootIndex()
         self.left_list_view.setRootIndex(now_index.parent())
+        
+    def home_folder2(self):
+        self.now_path = ''
+        self.load_right()
+    
+    def back_folder2(self):
+        new_path = self.now_path.split('\\')
+        # print(new_path)
+        new_path = '\\'.join(new_path[0:-1]) if len(new_path) > 2 else new_path[0]+'\\' if len(new_path) == 2 and new_path[1]!='' else '' 
+        self.now_path = new_path
+        # print(self.now_path)
+        self.load_right()
             
     def double_click_event_left(self, index):
         if self.model.isDir(index):
             self.left_list_view.setRootIndex(index)
         else:
-            print(self.model.filePath(index))
+            # print(self.model.filePath(index))
+            pass
             
     def double_click_event_right(self, index):
-        if self.model.isDir(index):
-            self.right_list_view.setRootIndex(index)
-        else:
-            print(self.model.filePath(index))
+        try:
+            if self.server.list_file[index.row()]['type'] == 'folder':
+                self.now_path = self.server.list_file[index.row()]['path']
+                # print(self.now_path)
+                self.load_right()
+            else:
+                # print(self.server.list_file[index.row()]['path'])
+                pass
+        except:
+            pass
             
     def right_click_event(self, position):
         index = self.left_list_view.indexAt(position)
@@ -103,29 +176,22 @@ class FileManagerApp(QMainWindow):
         
     def right_click_event2(self, position):
         index = self.right_list_view.indexAt(position)
-        if not index.isValid() or self.model.isDir(index):
+        if self.server.list_file[index.row()]['type'] == 'folder':
             return
-
         menu = QMenu()
-        menu.addAction("Remove", lambda: self.remove_file(index))
-        menu.addAction("Receive", lambda: self.receive(index))
+        menu.addAction("Receive", lambda: self.receive(index.row()))
         menu.exec_(self.right_list_view.viewport().mapToGlobal(position))
-        
-    def remove_file(self, index):
-        self.model.remove(index)
-
             
     def copy_file(self,path1):
-        # print(self.model.filePath(path1))
-        shutil.copy(self.model.filePath(path1), 'async')
-        
-    def receive(self,path1):
-        shutil.copy(self.model.filePath(path1), self.model.filePath(self.left_list_view.rootIndex()))
+        path =  self.model.filePath(path1)
+        # print(path)
+        self.server.send_file(path, self.now_path)
+        # print('ok2')
+        self.load_right()
+    def receive(self,index):
+        path =self.model.filePath(self.left_list_view.rootIndex())
+        # print(path)
+        self.server.need_file(self.server.list_file[index]['path'],path)
         
         
 
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    file_manager = FileManagerApp()
-    file_manager.show()
-    sys.exit(app.exec_())
