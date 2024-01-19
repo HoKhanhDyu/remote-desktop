@@ -100,7 +100,9 @@ class Ui_MainWindow(object):
         self.server.have_pass = self.ui2.have_password    
         
     def open_async(self):
-        self.file_manager = FileManagerApp()
+        if self.server.client_socket is None:
+            return
+        self.file_manager = FileManagerApp(self.server)
         self.file_manager.show()
 
     def get_ip_port(self):
